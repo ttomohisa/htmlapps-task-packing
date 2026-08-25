@@ -57,7 +57,7 @@ The core app does not require a local web server. The optional **Mini board** de
 3. Optionally mark the task as **Important** and add a note.
 4. Keep the task unplaced until you are ready, or choose **Place** and select an empty board position.
 5. On desktop, drag placed tasks to rearrange them. Drag a placed task back to the task list to unplace it.
-6. Complete a task from its board block. Use the toast to Undo accidental completion.
+6. Complete a task from the task list or directly from its board block. Use the toast to Undo accidental completion.
 7. Review completed work in **Completion history**. Restore entries to the task list, delete one entry, or use **Clear all** when you no longer need the history.
 8. Resize the board whenever your planning horizon changes. Tasks that no longer fit are preserved and returned to the unplaced list.
 9. Save a JSON backup from **Board & data** when you want a portable copy of your local state.

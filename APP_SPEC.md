@@ -32,7 +32,7 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Board presets: 4×4, 5×5, 7×7, 9×9 plus custom rows and columns from 3–16.
 - Placed tasks may not overlap or extend beyond board bounds.
 - Important tasks use a visually distinct warm board color.
-- Every placed block exposes a Complete button.
+- Every active task exposes a Complete action in the task list, and every placed block also exposes a Complete button.
 - Completing removes the task from active tasks and records a completion timestamp in history.
 - Completion provides toast Undo.
 - History entries can be restored to the active task list as unplaced tasks, deleted individually with Undo, or cleared in bulk after confirmation.

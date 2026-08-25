@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.0.0 - 2026-08-25
+- Added a Complete action to every task card in the active task list, with the same completion-history and toast Undo behavior as the board.
 - Prevent task cards in the task list from stretching to fill unused vertical space; restore proportional mini size grids and simplify board notes.
 - Fixed board-internal drag-and-drop regression; moving a placed block now preserves the grabbed cell and allows self-overlapping moves.
 - Improved capacity-board readability with larger task titles, completion controls, note controls, and inline note previews on larger blocks.
