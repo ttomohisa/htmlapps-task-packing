@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Task Packing</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316624F'/%3E%3Cg fill='none' stroke='white' stroke-width='3'%3E%3Crect x='13' y='13' width='38' height='38' rx='3'/%3E%3Cpath d='M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38' opacity='.42'/%3E%3Crect x='15.5' y='15.5' width='20.3' height='20.3' rx='2' fill='white' stroke='none'/%3E%3Crect x='38.8' y='15.5' width='9.7' height='9.7' rx='2' fill='white' stroke='none'/%3E%3Crect x='38.8' y='28.8' width='9.7' height='19.7' rx='2' fill='white' stroke='none'/%3E%3C/g%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f5f5f2; --surface:#fff; --surface-muted:#f0f0ed; --surface-hover:#e9e9e5;
+      --text:#20211f; --muted:#686b65; --line:#dadbd6; --line-strong:#bfc1ba;
+      --accent:#16624f; --accent-hover:#0e503f; --accent-soft:#e1f0ea; --danger:#b3261e;
+      --warning:#946200; --warning-soft:#fff3d1; --focus:#4d8bc7;
+      --shadow-sm:0 1px 2px rgba(25,28,24,.08),0 1px 6px rgba(25,28,24,.04);
+      --shadow-md:0 16px 44px rgba(25,28,24,.14); --radius:14px; --header-height:66px;
+      --mobile-bar-height:74px;
+    }
+    * { box-sizing:border-box; }
+    html { min-height:100%; background:var(--bg); scroll-behavior:smooth; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Yu Gothic UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    button,input,select,textarea { font:inherit; color:inherit; }
+    button { -webkit-tap-highlight-color:transparent; }
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible { outline:3px solid color-mix(in srgb,var(--focus) 55%,transparent); outline-offset:2px; }
+    .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+    .app-header { position:sticky; top:0; z-index:40; min-height:var(--header-height); border-bottom:1px solid color-mix(in srgb,var(--line) 82%,transparent); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(16px) saturate(1.2); }
+    .header-inner { width:min(1320px,100%); min-height:var(--header-height); margin:0 auto; padding:10px clamp(14px,2.8vw,30px); display:flex; align-items:center; gap:14px; }
+    .brand { display:flex; align-items:center; gap:10px; min-width:0; }
+    .brand-mark { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:11px; background:var(--accent); color:#fff; box-shadow:var(--shadow-sm); }
+    .brand-mark svg { width:25px; height:25px; display:block; }
+    .brand-copy { min-width:0; }
+    .brand-name { margin:0; font-size:17px; line-height:1.2; letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .version-badge { display:inline-flex; margin-left:7px; padding:1px 6px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:var(--surface-muted); font-size:10px; font-weight:650; vertical-align:2px; }
+    .brand-meta { margin:2px 0 0; color:var(--muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .header-actions { margin-left:auto; display:flex; align-items:center; gap:12px; }
+    .language-button,.header-icon-button { border:0; background:transparent; color:var(--muted); cursor:pointer; font-weight:750; }
+    .language-button { padding:6px 2px; font-size:12px; }
+    .header-icon-button { display:grid; place-items:center; width:34px; height:34px; padding:5px; }
+    .header-icon-button:hover,.language-button:hover { color:var(--text); }
+    .header-icon-button svg { width:20px; height:20px; }
+    .main { width:min(1320px,100%); margin:0 auto; padding:22px clamp(14px,2.8vw,30px) 54px; }
+    .page-intro { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:0 2px 18px; }
+    .page-intro h2 { margin:0; font-size:clamp(21px,3vw,27px); line-height:1.3; letter-spacing:-.025em; }
+    .page-intro p { margin:5px 0 0; max-width:760px; color:var(--muted); font-size:13px; }
+    .local-badge { display:inline-flex; align-items:center; gap:7px; flex:0 0 auto; margin-top:3px; padding:7px 10px; border:1px solid color-mix(in srgb,var(--accent) 24%,var(--line)); border-radius:999px; color:var(--accent); background:var(--accent-soft); font-size:12px; font-weight:700; white-space:nowrap; }
+    .local-badge svg { width:15px; height:15px; }
+    .desktop-layout { display:grid; grid-template-columns:minmax(280px,350px) minmax(0,1fr); gap:18px; align-items:start; }
+    .panel { border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:var(--shadow-sm); }
+    .panel-head { padding:17px 18px 14px; border-bottom:1px solid var(--line); }
+    .panel-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .panel h2 { margin:0; font-size:17px; letter-spacing:-.015em; }
+    .panel-subtitle { margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .button { min-height:38px; padding:7px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer; font-weight:720; transition:border-color .16s ease,background .16s ease,transform .16s ease; }
+    .button:hover { border-color:var(--line-strong); background:var(--surface-hover); }
+    .button:active { transform:translateY(1px); }
+    .button.primary { border-color:var(--accent); color:#fff; background:var(--accent); }
+    .button.primary:hover { border-color:var(--accent-hover); background:var(--accent-hover); }
+    .button.danger { color:var(--danger); }
+    .button.small { min-height:32px; padding:5px 9px; font-size:12px; }
+    .icon-only { display:grid; place-items:center; width:34px; height:34px; padding:0; }
+    .icon-only svg,.button svg { width:16px; height:16px; vertical-align:-3px; }
+    .task-tools { padding:13px 14px; border-bottom:1px solid var(--line); display:grid; gap:9px; }
+    .search-wrap { position:relative; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; width:16px; height:16px; color:var(--muted); transform:translateY(-50%); pointer-events:none; }
+    .search-input { width:100%; min-height:38px; padding:8px 10px 8px 34px; border:1px solid var(--line); border-radius:10px; background:#fbfbf9; }
+    .filter-row { display:flex; gap:6px; overflow:auto; scrollbar-width:none; }
+    .filter-row::-webkit-scrollbar { display:none; }
+    .filter-chip { flex:0 0 auto; min-height:30px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; background:var(--surface); color:var(--muted); cursor:pointer; font-size:11px; font-weight:750; }
+    .filter-chip.is-active { border-color:color-mix(in srgb,var(--accent) 36%,var(--line)); background:var(--accent-soft); color:var(--accent); }
+    .task-list { display:grid; gap:8px; align-content:start; grid-auto-rows:max-content; max-height:calc(100vh - 284px); min-height:280px; overflow:auto; padding:12px 12px 16px; }
+    .task-card { position:relative; display:flex; flex-direction:column; min-height:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fdfdfb; cursor:pointer; transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease; }
+    .task-card:hover { border-color:var(--line-strong); box-shadow:var(--shadow-sm); }
+    .task-card.is-selected { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+    .task-card.is-important { border-left:4px solid #c77900; padding-left:9px; }
+    .task-card[draggable="true"] { cursor:grab; }
+    .task-card.dragging { opacity:.45; }
+    .task-card.reorder-before::before,.task-card.reorder-after::after { content:""; position:absolute; left:8px; right:8px; height:3px; border-radius:999px; background:var(--accent); }
+    .task-card.reorder-before::before { top:-6px; }
+    .task-card.reorder-after::after { bottom:-6px; }
+    .task-card-head { display:flex; align-items:flex-start; gap:8px; min-height:0; }
+    .drag-handle { display:grid; place-items:center; width:18px; height:24px; flex:0 0 auto; margin:-1px -2px 0 -3px; border:0; background:transparent; color:var(--line-strong); cursor:grab; }
+    .drag-handle svg { width:13px; height:18px; }
+    .task-card:hover .drag-handle { color:var(--muted); }
+    .size-glyph { --gw:2; --gh:2; display:grid; grid-template-columns:repeat(var(--gw),5px); grid-template-rows:repeat(var(--gh),5px); gap:2px; flex:0 0 auto; padding:4px; border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:7px; background:var(--accent-soft); }
+    .size-glyph i { width:5px; height:5px; border-radius:1px; background:var(--accent); opacity:.86; }
+    .task-card-main { flex:1; min-width:0; }
+    .task-title { margin:0; font-size:13px; font-weight:780; line-height:1.35; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+    .task-meta { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; margin-top:6px; overflow:hidden; color:var(--muted); font-size:10px; }
+    .badge { display:inline-flex; align-items:center; min-height:20px; padding:2px 6px; border-radius:999px; background:var(--surface-muted); color:var(--muted); font-weight:720; white-space:nowrap; }
+    .badge.placed { background:var(--accent-soft); color:var(--accent); }
+    .badge.important { background:#fff0cf; color:#865400; }
+    .task-note { min-height:15px; margin:7px 0 0; color:var(--muted); font-size:11px; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+    .task-note.is-empty { visibility:hidden; }
+    .task-actions { display:flex; flex-wrap:nowrap; gap:5px; margin-top:9px; }
+    .task-link { display:inline-flex; align-items:center; gap:4px; border:0; border-radius:7px; padding:4px 7px; background:transparent; color:var(--muted); cursor:pointer; font-size:10px; font-weight:760; }
+    .task-link svg { width:13px; height:13px; flex:0 0 auto; }
+    .task-link:hover { background:var(--surface-muted); color:var(--text); }
+    .task-link.primary { color:var(--accent); }
+    .task-link.danger { color:var(--danger); }
+    .empty-state { display:grid; place-items:center; align-content:center; min-height:220px; padding:28px 18px; text-align:center; color:var(--muted); }
+    .empty-state svg { width:36px; height:36px; margin-bottom:10px; color:var(--line-strong); }
+    .empty-state strong { display:block; margin-bottom:4px; color:var(--text); font-size:13px; }
+    .left-stack { display:grid; gap:18px; min-width:0; }
+    .history-panel { min-width:0; }
+    .history-list { display:grid; gap:7px; max-height:300px; overflow:auto; padding:10px 12px 14px; transition:background .15s ease,box-shadow .15s ease; }
+    .task-list.is-drop-target,.history-list.is-drop-target { background:color-mix(in srgb,var(--accent-soft) 72%,white); box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 42%,transparent); }
+    .history-item { padding:10px 11px; border:1px solid var(--line); border-radius:11px; background:#fdfdfb; transition:opacity .15s ease,border-color .15s ease; }
+    .history-item[draggable="true"] { cursor:grab; }
+    .history-item.dragging { opacity:.45; }
+    .history-item-head { display:flex; align-items:flex-start; gap:8px; }
+    .history-item-main { flex:1; min-width:0; }
+    .history-item-title { margin:0; font-size:12px; font-weight:780; line-height:1.35; overflow-wrap:anywhere; }
+    .history-item-meta { margin-top:4px; color:var(--muted); font-size:9px; }
+    .history-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; }
+    .history-delete { display:grid; place-items:center; width:28px; height:28px; padding:0; border:0; border-radius:7px; background:transparent; color:var(--muted); cursor:pointer; }
+    .history-delete:hover { background:#fbe9e7; color:var(--danger); }
+    .history-delete svg { width:14px; height:14px; }
+    .history-empty { min-height:110px; padding:20px 14px; }
+    .board-panel { min-width:0; }
+    .board-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:13px 16px; border-bottom:1px solid var(--line); }
+    .capacity { display:flex; align-items:center; gap:10px; flex:1 1 280px; min-width:0; }
+    .capacity-meter { flex:1; min-width:100px; max-width:260px; height:8px; overflow:hidden; border-radius:999px; background:var(--surface-muted); }
+    .capacity-fill { width:0; height:100%; border-radius:inherit; background:var(--accent); transition:width .2s ease; }
+    .capacity-copy { white-space:nowrap; font-size:11px; color:var(--muted); }
+    .capacity-copy strong { color:var(--text); }
+    .toolbar-actions { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+    .selection-bar { display:none; align-items:center; gap:9px; margin:12px 14px 0; padding:9px 10px; border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line)); border-radius:10px; background:var(--accent-soft); color:var(--accent); font-size:11px; }
+    .selection-bar.show { display:flex; }
+    .selection-bar strong { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .selection-bar .mini-button { border:0; background:transparent; color:var(--accent); padding:4px 5px; cursor:pointer; font-weight:760; }
+    .board-wrap { padding:14px; overflow:auto; }
+    .board-shell { min-width:430px; width:100%; max-width:860px; margin:0 auto; }
+    .board { --cols:5; --rows:5; position:relative; display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); grid-template-rows:repeat(var(--rows),minmax(0,1fr)); gap:2px; width:100%; min-width:calc(var(--cols) * 56px); aspect-ratio:var(--cols)/var(--rows); min-height:360px; padding:4px; border:1px solid var(--line-strong); border-radius:13px; background:var(--line); overflow:hidden; touch-action:manipulation; }
+    .grid-cell { position:relative; min-width:0; min-height:0; border:0; border-radius:3px; background:#fafaf8; cursor:pointer; padding:0; }
+    .grid-cell:hover { background:#f3f3ef; }
+    .grid-cell.preview-valid { background:#d8ede5; }
+    .grid-cell.preview-invalid { background:#f8dddd; }
+    .grid-cell.drop-target { box-shadow:inset 0 0 0 2px var(--accent); }
+    .board-task { position:relative; z-index:3; min-width:0; min-height:0; margin:1px; padding:10px 42px 10px 10px; border:1px solid color-mix(in srgb,var(--accent) 25%,transparent); border-radius:9px; background:linear-gradient(145deg,#e7f3ee,#d9ece4); color:#124b3d; box-shadow:0 2px 7px rgba(22,98,79,.12); cursor:grab; overflow:hidden; user-select:none; }
+    .board-task:hover { box-shadow:0 4px 12px rgba(22,98,79,.18); }
+    .board-task.is-important { border-color:#c77900; background:linear-gradient(145deg,#fff3dc,#ffe0a7); color:#6f4700; box-shadow:0 2px 7px rgba(160,101,0,.14); }
+    .board-task.is-important:hover { box-shadow:0 4px 12px rgba(160,101,0,.2); }
+    .board-task-complete { position:absolute; top:7px; right:7px; z-index:4; display:grid; place-items:center; width:30px; height:30px; padding:0; border:1.5px solid color-mix(in srgb,currentColor 28%,transparent); border-radius:8px; background:rgba(255,255,255,.84); color:inherit; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .board-task-complete:hover { background:#fff; }
+    .board-task-complete svg { width:18px; height:18px; }
+    .board-task.is-selected { box-shadow:0 0 0 2px #fff,0 0 0 4px var(--accent); }
+    .board-task.dragging { opacity:.4; }
+    .board-task-title { display:block; font-size:clamp(12px,1.5vw,16px); font-weight:820; line-height:1.28; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
+    .board-task-note-preview { display:-webkit-box; width:100%; margin:6px 0 0; padding:0; border:0; background:transparent; overflow:hidden; color:color-mix(in srgb,currentColor 74%,transparent); text-align:left; font:inherit; font-size:clamp(10px,1.1vw,12px); font-weight:620; line-height:1.35; -webkit-box-orient:vertical; -webkit-line-clamp:2; white-space:pre-wrap; cursor:pointer; }
+    .board-task-note-preview:hover { color:currentColor; text-decoration:underline; text-underline-offset:2px; }
+    .board-task.is-compact { padding:8px 34px 8px 8px; }
+    .board-task.is-compact .board-task-title { font-size:12px; -webkit-line-clamp:2; }
+    .board-task.is-compact .board-task-complete { top:5px; right:5px; width:26px; height:26px; }
+    .board-task.is-compact .board-task-complete svg { width:16px; height:16px; }
+    .board-task-size { position:absolute; right:5px; bottom:4px; padding:1px 4px; border-radius:5px; background:rgba(255,255,255,.66); font-size:8px; font-weight:800; }
+    .board-note-popover { position:fixed; z-index:95; width:min(320px,calc(100vw - 24px)); padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:var(--shadow-md); }
+    .board-note-popover[hidden] { display:none; }
+    .board-note-head { display:flex; align-items:flex-start; gap:8px; }
+    .board-note-head strong { flex:1; min-width:0; font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
+    .board-note-close { display:grid; place-items:center; width:24px; height:24px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--muted); cursor:pointer; }
+    .board-note-close:hover { background:var(--surface-muted); color:var(--text); }
+    .board-note-close svg { width:13px; height:13px; }
+    .board-note-text { margin:7px 0 0; max-height:160px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--muted); font-size:11px; line-height:1.55; }
+    .board-note-actions { display:flex; justify-content:flex-end; margin-top:8px; }
+    .board-footer { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .mini-stat { padding:9px 10px; border-radius:10px; background:var(--surface-muted); }
+    .mini-stat span { display:block; color:var(--muted); font-size:9px; }
+    .mini-stat strong { display:block; margin-top:2px; font-size:12px; }
+    .settings-panel { margin-top:18px; }
+    .settings-grid { display:grid; grid-template-columns:1.15fr 1fr 1fr; gap:14px; padding:16px 18px 18px; }
+    .setting-group { min-width:0; }
+    .setting-group h3 { margin:0 0 7px; font-size:12px; }
+    .setting-group p { margin:0 0 10px; color:var(--muted); font-size:10px; }
+    .preset-row { display:flex; flex-wrap:wrap; gap:6px; }
+    .preset { min-height:32px; padding:5px 9px; border:1px solid var(--line); border-radius:9px; background:var(--surface); cursor:pointer; font-size:11px; font-weight:740; }
+    .preset.is-active { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+    .dimension-row { display:flex; align-items:end; gap:7px; margin-top:8px; }
+    .field { display:grid; gap:5px; min-width:0; }
+    .field label { color:var(--muted); font-size:10px; font-weight:730; }
+    .field input,.field select,.field textarea { width:100%; min-height:38px; border:1px solid var(--line); border-radius:9px; background:#fbfbf9; padding:8px 9px; }
+    .field textarea { min-height:76px; resize:vertical; }
+    .dimension-row .field { width:74px; }
+    .dimension-x { padding-bottom:9px; color:var(--muted); }
+    .backup-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; align-items:end; }
+    .filename-control { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; overflow:hidden; border:1px solid var(--line); border-radius:9px; background:#fbfbf9; }
+    .filename-control input { width:100%; min-width:0; min-height:36px; padding:7px 8px; border:0; outline:0; background:transparent; }
+    .filename-control span { padding:0 8px; color:var(--muted); font-size:10px; }
+    .file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+    .danger-zone { display:flex; gap:7px; flex-wrap:wrap; }
+    footer { width:min(1320px,100%); margin:0 auto; padding:0 clamp(14px,2.8vw,30px) 34px; color:var(--muted); font-size:11px; }
+    dialog { border:0; padding:0; background:transparent; color:var(--text); }
+    dialog::backdrop { background:rgba(20,22,20,.38); backdrop-filter:blur(2px); }
+    .dialog-card { width:min(520px,calc(100vw - 28px)); max-height:min(760px,calc(100vh - 34px)); overflow:auto; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:var(--shadow-md); }
+    .dialog-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:12px; padding:15px 16px; border-bottom:1px solid var(--line); background:var(--surface); }
+    .dialog-head h2 { flex:1; margin:0; font-size:17px; }
+    .dialog-close { display:grid; place-items:center; width:32px; height:32px; padding:0; border:1px solid var(--line); border-radius:9px; background:var(--surface); cursor:pointer; }
+    .dialog-close svg { width:16px; height:16px; }
+    .dialog-body { padding:16px; }
+    .dialog-body h3 { margin:18px 0 7px; font-size:13px; }
+    .dialog-body h3:first-child { margin-top:0; }
+    .dialog-body p,.dialog-body li { color:var(--muted); font-size:12px; }
+    .dialog-body ol,.dialog-body ul { padding-left:20px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .form-grid .full { grid-column:1/-1; }
+    .size-presets { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:9px; }
+    .custom-size-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .custom-size-fields[hidden] { display:none; }
+    .size-preset { min-height:42px; border:1px solid var(--line); border-radius:9px; background:var(--surface); cursor:pointer; font-size:10px; font-weight:760; }
+    .size-preset.is-active { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+    .important-toggle { display:flex; align-items:flex-start; gap:9px; padding:10px 11px; border:1px solid var(--line); border-radius:10px; background:#fbfbf9; cursor:pointer; }
+    .important-toggle input { width:17px; height:17px; margin:1px 0 0; accent-color:#b66e00; }
+    .important-toggle strong { display:block; font-size:12px; }
+    .important-toggle span { display:block; margin-top:2px; color:var(--muted); font-size:10px; }
+    .dialog-actions { display:flex; justify-content:flex-end; gap:8px; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:var(--surface); }
+    .app-toast { position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom)); z-index:100; display:flex; align-items:center; gap:12px; max-width:min(430px,calc(100vw - 36px)); padding:10px 12px; border:1px solid #2a332f; border-radius:11px; background:#252b28; color:white; box-shadow:var(--shadow-md); opacity:0; transform:translateY(10px); pointer-events:none; transition:.18s ease; }
+    .app-toast.show { opacity:1; transform:none; pointer-events:auto; }
+    .app-toast-message { flex:1; font-size:12px; }
+    .app-toast-action { border:0; background:transparent; color:#a9e0cd; cursor:pointer; font-weight:800; }
+    .app-confirm-card { width:min(440px,calc(100vw - 28px)); }
+    .app-confirm-message { margin:0; color:var(--muted); white-space:pre-wrap; }
+    .mobile-bottom-bar { display:none; }
+    .app-mobile-page { display:block; }
+    @media (max-width:900px) {
+      .desktop-layout { grid-template-columns:minmax(250px,310px) minmax(0,1fr); gap:12px; }
+      .settings-grid { grid-template-columns:1fr 1fr; }
+      .settings-grid .setting-group:last-child { grid-column:1/-1; }
+      .board-wrap { padding:10px; }
+    }
+    @media (max-width:600px) {
+      body { padding-bottom:calc(var(--mobile-bar-height) + env(safe-area-inset-bottom)); }
+      .header-inner { padding:9px 13px; }
+      .brand-meta { display:none; }
+      .brand-name { font-size:15px; }
+      .page-intro { padding-bottom:12px; }
+      .page-intro h2 { font-size:20px; }
+      .page-intro p { font-size:12px; }
+      .local-badge { display:none; }
+      .main { padding:14px 12px 24px; }
+      .desktop-layout { display:block; }
+      .left-stack { display:contents; }
+      .history-list { max-height:none; overflow:visible; }
+      body.has-mobile-page-tabs .app-mobile-page { display:none; }
+      body.has-mobile-page-tabs .app-mobile-page.is-mobile-active { display:block; }
+      .panel { border-radius:14px; }
+      .panel-head { padding:14px; }
+      .task-list { max-height:none; min-height:calc(100vh - 290px); overflow:visible; padding-bottom:18px; }
+      .board-wrap { padding:10px; margin:0 -1px; }
+      .board-shell { min-width:0; }
+      .board { min-height:0; border-radius:10px; gap:1.5px; padding:3px; }
+      .board-task { padding:8px 36px 8px 8px; border-radius:7px; }
+      .board-task-complete { top:5px; right:5px; width:26px; height:26px; }
+      .board-task-size { display:none; }
+      .board-footer { gap:6px; }
+      .mini-stat { padding:8px; }
+      .settings-panel { margin-top:0; }
+      .settings-grid { grid-template-columns:1fr; padding:14px; }
+      .settings-grid .setting-group:last-child { grid-column:auto; }
+      .mobile-bottom-bar { position:fixed; z-index:80; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; padding:6px 10px calc(6px + env(safe-area-inset-bottom)); border-top:1px solid color-mix(in srgb,var(--line) 82%,transparent); background:rgba(255,255,255,.95); box-shadow:0 -8px 24px rgba(20,22,20,.06); backdrop-filter:blur(18px) saturate(1.35); }
+      .mobile-nav-item { min-width:0; min-height:54px; padding:5px 4px; border:0; border-radius:12px; background:transparent; color:var(--muted); display:grid; place-items:center; align-content:center; gap:3px; font-size:10px; font-weight:750; cursor:pointer; }
+      .mobile-nav-item svg { width:21px; height:21px; }
+      .mobile-nav-item.is-active { color:var(--accent); background:var(--accent-soft); }
+      .app-toast { left:12px; right:12px; bottom:calc(var(--mobile-bar-height) + 10px + env(safe-area-inset-bottom)); max-width:none; }
+      dialog { width:100%; max-width:none; margin:auto 0 0; }
+      .dialog-card,.app-confirm-card { width:100%; max-height:min(82vh,760px); border-radius:18px 18px 0 0; border-bottom:0; }
+      .dialog-actions { position:sticky; bottom:0; }
+      .form-grid { grid-template-columns:1fr; }
+      .form-grid .full { grid-column:auto; }
+      .size-presets { grid-template-columns:repeat(3,1fr); }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }
+  </style>
+</head>
+<body class="has-mobile-page-tabs">
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><rect x="2.5" y="2.5" width="27" height="27" rx="2.7" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.2v25.6M20 3.2v25.6M3.2 12h25.6M3.2 20h25.6" stroke="currentColor" stroke-width="1.2" opacity=".4"/><rect x="4.5" y="4.5" width="13.5" height="13.5" rx="1.6" fill="currentColor"/><rect x="20.8" y="4.5" width="6.7" height="6.7" rx="1.5" fill="currentColor"/><rect x="20.8" y="13.8" width="6.7" height="13.7" rx="1.5" fill="currentColor"/></svg>
+        </div>
+        <div class="brand-copy">
+          <h1 class="brand-name"><span id="brandName">Task Packing</span><span class="version-badge" id="versionBadge">v1.0.0</span></h1>
+          <p class="brand-meta" data-i18n="brandMeta">To-do list · Finite board · Completion history</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="language-button" id="languageButton" type="button">EN</button>
+        <button class="header-icon-button" id="helpButton" type="button" data-i18n-title="helpTitle" data-i18n-aria-label="helpTitle" title="使い方と注意事項" aria-label="使い方と注意事項">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.35 2.35 0 1 1 3.7 1.92c-.95.67-1.5 1.08-1.5 2.08M12 17h.01"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="page-intro">
+      <div>
+        <h2 data-i18n="introTitle">やることを、キャパの中に収める。</h2>
+        <p data-i18n="lead">タスクには大きさがある。有限のボードに置いて、今抱えている仕事量を目で見て調整します。</p>
+      </div>
+      <span class="local-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span data-i18n="localBadge">完全ローカル処理</span></span>
+    </section>
+
+    <div class="desktop-layout">
+      <div class="left-stack">
+      <section class="panel app-mobile-page is-mobile-active" id="tasksPage" aria-labelledby="tasksTitle">
+        <div class="panel-head">
+          <div class="panel-title-row">
+            <div><h2 id="tasksTitle" data-i18n="tasksTitle">タスク一覧</h2><p class="panel-subtitle" id="taskCountLabel">0 tasks</p></div>
+            <button class="button primary small" id="addTaskButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> <span data-i18n="addTask">追加</span></button>
+          </div>
+        </div>
+        <div class="task-tools">
+          <div class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><label class="sr-only" for="taskSearch" data-i18n="searchTasks">タスクを検索</label><input class="search-input" id="taskSearch" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="タスクを検索"></div>
+          <div class="filter-row" role="group" data-i18n-aria-label="filterLabel" aria-label="表示フィルター">
+            <button class="filter-chip is-active" type="button" data-filter="all" data-i18n="filterAll">すべて</button>
+            <button class="filter-chip" type="button" data-filter="unplaced" data-i18n="filterUnplaced">未配置</button>
+            <button class="filter-chip" type="button" data-filter="placed" data-i18n="filterPlaced">配置済み</button>
+          </div>
+        </div>
+        <div class="task-list" id="taskList" aria-live="polite"></div>
+      </section>
+
+      <section class="panel history-panel app-mobile-page" id="historyPage" aria-labelledby="historyTitle">
+        <div class="panel-head">
+          <div class="panel-title-row">
+            <div><h2 id="historyTitle" data-i18n="historyTitle">完了履歴</h2><p class="panel-subtitle" id="historyCountLabel">0 件</p></div>
+            <button class="button small danger" id="clearHistoryButton" type="button" data-i18n="clearHistory">すべて削除</button>
+          </div>
+        </div>
+        <div class="history-list" id="historyList" aria-live="polite"></div>
+      </section>
+      </div>
+
+      <section class="panel board-panel app-mobile-page" id="boardPage" aria-labelledby="boardTitle">
+        <div class="panel-head">
+          <div class="panel-title-row">
+            <div><h2 id="boardTitle" data-i18n="boardTitle">キャパシティボード</h2><p class="panel-subtitle" id="boardSizeLabel">5 × 5 · 25 cells</p></div>
+          </div>
+        </div>
+        <div class="board-toolbar">
+          <div class="capacity">
+            <div class="capacity-meter" aria-hidden="true"><div class="capacity-fill" id="capacityFill"></div></div>
+            <div class="capacity-copy"><strong id="capacityPercent">0%</strong> <span data-i18n="used">使用</span> · <span id="capacityCells">0 / 81</span></div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="button small" id="miniBoardButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="13" height="12" rx="2"/><rect x="9" y="9" width="12" height="10" rx="2"/></svg> <span data-i18n="miniBoard">ミニボード</span></button>
+            <button class="button small" id="compactButton" type="button" data-i18n="compact">詰め直す</button>
+            <button class="button small" id="clearBoardButton" type="button" data-i18n="clearBoard">全て外す</button>
+          </div>
+        </div>
+        <div class="selection-bar" id="selectionBar"><span data-i18n="selectedTask">配置するタスク:</span><strong id="selectedTaskName"></strong><button class="mini-button" id="cancelSelectionButton" type="button" data-i18n="cancel">キャンセル</button></div>
+        <div class="board-wrap">
+          <div class="board-shell">
+            <div class="board" id="board" role="grid" data-i18n-aria-label="boardAria" aria-label="タスク配置ボード"></div>
+            <div class="board-footer">
+              <div class="mini-stat"><span data-i18n="freeCells">空きマス</span><strong id="freeCellsValue">25</strong></div>
+              <div class="mini-stat"><span data-i18n="largestSpace">最大の空き長方形</span><strong id="largestSpaceValue">5 × 5</strong></div>
+              <div class="mini-stat"><span data-i18n="unplacedCount">未配置タスク</span><strong id="unplacedValue">0</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel settings-panel app-mobile-page" id="settingsPage" aria-labelledby="settingsTitle">
+      <div class="panel-head"><h2 id="settingsTitle" data-i18n="settingsTitle">ボードとデータ</h2><p class="panel-subtitle" data-i18n="settingsSubtitle">ボードサイズはいつでも変更できます。縮小で収まらないタスクは一覧へ戻ります。</p></div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <h3 data-i18n="boardSize">ボードサイズ</h3>
+          <p data-i18n="boardSizeHelp">4×4、5×5、7×7、9×9のプリセット、または縦横を個別に指定できます。</p>
+          <div class="preset-row" id="boardPresets">
+            <button class="preset" type="button" data-rows="4" data-cols="4">4 × 4</button>
+            <button class="preset is-active" type="button" data-rows="5" data-cols="5">5 × 5</button>
+            <button class="preset" type="button" data-rows="7" data-cols="7">7 × 7</button>
+            <button class="preset" type="button" data-rows="9" data-cols="9">9 × 9</button>
+          </div>
+          <div class="dimension-row">
+            <div class="field"><label for="boardCols" data-i18n="columns">横</label><input id="boardCols" type="number" min="3" max="16" inputmode="numeric" value="5"></div>
+            <span class="dimension-x">×</span>
+            <div class="field"><label for="boardRows" data-i18n="rows">縦</label><input id="boardRows" type="number" min="3" max="16" inputmode="numeric" value="5"></div>
+            <button class="button small" id="applyBoardSizeButton" type="button" data-i18n="apply">適用</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <h3 data-i18n="backupTitle">バックアップ</h3>
+          <p data-i18n="backupHelp">タスク・配置・ボードサイズをJSONで保存できます。</p>
+          <div class="backup-row">
+            <div class="field"><label for="outputFilename" data-i18n="outputFilename">ファイル名</label><div class="filename-control"><input id="outputFilename" value="task-packing-backup" aria-describedby="outputFilenameHint"><span>.json</span></div><span class="sr-only" id="outputFilenameHint" data-i18n="outputFilenameHint">拡張子は自動で .json が付きます</span></div>
+            <button class="button small" id="exportButton" type="button" data-i18n="export">保存</button>
+          </div>
+          <div style="margin-top:7px"><input class="file-input" id="importFile" type="file" accept="application/json,.json"><button class="button small" id="importButton" type="button" data-i18n="import">JSONから復元</button></div>
+        </div>
+        <div class="setting-group">
+          <h3 data-i18n="dataTitle">データ管理</h3>
+          <p data-i18n="dataHelp">データはこのブラウザーのlocalStorageに自動保存されます。</p>
+          <div class="danger-zone"><button class="button danger small" id="resetButton" type="button" data-i18n="resetAll">すべてリセット</button></div>
+          <p style="margin-top:12px"><span data-i18n="buildInfo">Version</span> <strong id="buildVersion">—</strong> · <span id="builtAt">—</span></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><span id="footerName">Task Packing</span> · MIT License · <span data-i18n="footer">Browser Kitty · 完全ローカル処理</span></footer>
+
+  <nav class="mobile-bottom-bar" id="mobileBottomBar" aria-label="Mobile navigation">
+    <button class="mobile-nav-item is-active" type="button" data-page="tasksPage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14M5 12h14M5 18h14"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg><span data-i18n="navTasks">タスク</span></button>
+    <button class="mobile-nav-item" type="button" data-page="boardPage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg><span data-i18n="navBoard">ボード</span></button>
+    <button class="mobile-nav-item" type="button" data-page="historyPage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6"/><path d="M4 4v4.6h4.6M12 8v4l2.7 1.6"/></svg><span data-i18n="navHistory">履歴</span></button>
+    <button class="mobile-nav-item" type="button" data-page="settingsPage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.3 3a8 8 0 0 0-1.7 1L5 6 3 9.5 5.1 11a7 7 0 0 0 0 2L3 14.5 5 18l2.5-1a8 8 0 0 0 1.7 1l.3 3h5l.3-3a8 8 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.5a7 7 0 0 0 .1-1z"/></svg><span data-i18n="navSettings">設定</span></button>
+  </nav>
+
+  <aside class="board-note-popover" id="boardNotePopover" role="dialog" aria-modal="false" aria-labelledby="boardNoteTitle" hidden>
+    <div class="board-note-head"><strong id="boardNoteTitle"></strong><button class="board-note-close" id="boardNoteClose" type="button" data-i18n-aria-label="close" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m7 7 10 10M17 7 7 17"/></svg></button></div>
+    <p class="board-note-text" id="boardNoteText"></p>
+    <div class="board-note-actions"><button class="task-link primary" id="boardNoteEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"/></svg><span data-i18n="edit">編集</span></button></div>
+  </aside>
+
+  <div class="app-toast" id="appToast" role="status" aria-live="polite"><div class="app-toast-message" id="appToastMessage"></div><button class="app-toast-action" id="appToastAction" type="button" hidden></button></div>
+
+  <dialog id="appConfirmDialog" aria-labelledby="appConfirmTitle">
+    <div class="dialog-card app-confirm-card">
+      <div class="dialog-head"><h2 id="appConfirmTitle">確認</h2><button class="dialog-close" id="appConfirmClose" type="button" data-i18n-aria-label="close" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <div class="dialog-body"><p class="app-confirm-message" id="appConfirmMessage"></p></div>
+      <div class="dialog-actions"><button class="button" id="appConfirmCancel" type="button">キャンセル</button><button class="button primary" id="appConfirmOk" type="button">実行する</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="taskDialog" aria-labelledby="taskDialogTitle">
+    <form class="dialog-card" id="taskForm" method="dialog">
+      <div class="dialog-head"><h2 id="taskDialogTitle" data-i18n="newTask">タスクを追加</h2><button class="dialog-close" id="closeTaskDialog" type="button" data-i18n-aria-label="close" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field full"><label for="taskTitleInput" data-i18n="taskName">タスク名</label><input id="taskTitleInput" maxlength="120" autocomplete="off" required data-i18n-placeholder="taskNamePlaceholder" placeholder="例: READMEを更新"></div>
+          <div class="field full">
+            <label data-i18n="taskSize">大きさ</label>
+            <div class="size-presets" id="sizePresets">
+              <button class="size-preset" type="button" data-w="1" data-h="1">XS<br>1×1</button>
+              <button class="size-preset is-active" type="button" data-w="2" data-h="1">S<br>2×1</button>
+              <button class="size-preset" type="button" data-w="2" data-h="2">M<br>2×2</button>
+              <button class="size-preset" type="button" data-w="3" data-h="2">L<br>3×2</button>
+              <button class="size-preset" type="button" data-w="3" data-h="3">XL<br>3×3</button>
+              <button class="size-preset" type="button" data-custom="true"><span data-i18n="otherSize">その他</span><br>1–8</button>
+            </div>
+          </div>
+          <div class="custom-size-fields full" id="customSizeFields" hidden>
+            <div class="field"><label for="taskWidthInput" data-i18n="widthCells">横マス</label><input id="taskWidthInput" type="number" min="1" max="8" value="2" inputmode="numeric"></div>
+            <div class="field"><label for="taskHeightInput" data-i18n="heightCells">縦マス</label><input id="taskHeightInput" type="number" min="1" max="8" value="1" inputmode="numeric"></div>
+          </div>
+          <label class="important-toggle full" for="taskImportantInput"><input id="taskImportantInput" type="checkbox"><span><strong data-i18n="important">重要</strong><span data-i18n="importantHelp">重要タスクはボード上で色を変えて目立たせます。</span></span></label>
+          <div class="field full"><label for="taskNoteInput" data-i18n="noteOptional">メモ（任意）</label><textarea id="taskNoteInput" maxlength="400" data-i18n-placeholder="notePlaceholder" placeholder="完了条件や補足"></textarea></div>
+        </div>
+      </div>
+      <div class="dialog-actions"><button class="button" id="cancelTaskButton" type="button" data-i18n="cancel">キャンセル</button><button class="button primary" id="saveTaskButton" type="submit" data-i18n="saveTask">保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="helpDialog" aria-labelledby="helpTitleText">
+    <div class="dialog-card">
+      <div class="dialog-head"><h2 id="helpTitleText" data-i18n="helpTitle">使い方と注意事項</h2><button class="dialog-close" id="closeHelpButton" type="button" data-i18n-aria-label="close" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <div class="dialog-body">
+        <!-- APP:HELP:BEGIN -->
+        <h3 data-i18n="helpBasicsTitle">基本操作</h3>
+        <ol><li data-i18n="helpStep1">まずタスク一覧へタスクを追加し、自分が感じる仕事量をマス数で決めます。</li><li data-i18n="helpStep2">「配置」を押してからボードの空きマスを選ぶか、PCではタスクをボードへドラッグします。</li><li data-i18n="helpStep3">ボードサイズは4×4、5×5、7×7、9×9または3〜16マスの任意サイズへ変更できます。</li><li data-i18n="helpStep4">ボードから溢れる位置や、他タスクと重なる位置には置けません。空き容量だけでなく「最大の空き長方形」も確認できます。</li></ol>
+        <h3 data-i18n="helpPrivacyTitle">プライバシー</h3><p data-i18n="helpPrivacyBody">タスクと配置はブラウザー内で処理され、外部へ送信されません。実行時ネットワーク通信はCSPでも遮断しています。</p>
+        <h3 data-i18n="helpNotesTitle">注意事項</h3><ul><li data-i18n="helpNoteStorage">データはlocalStorageへ自動保存します。ブラウザーのサイトデータ削除で消える場合があるため、必要ならJSONバックアップを保存してください。</li><li data-i18n="helpNoteResize">ボードを小さくしたとき、収まらなくなったタスクは削除せず未配置として一覧へ戻します。</li><li data-i18n="helpNoteDrag">スマホではドラッグ操作より「配置→マスをタップ」を推奨します。</li></ul>
+        <p data-i18n="helpMiniBoard">対応ブラウザーでは「ミニボード」でボードを常に手前へ表示できます。</p>
+        <p data-i18n="helpOffline">配布物は単一HTMLです。ローカルで直接開いて利用できます。</p>
+        <!-- APP:HELP:END -->
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (() => {
+      'use strict';
+      const APP_CONFIG = __APP_CONFIG_JSON__;
+      const BUILD_MANIFEST = __BUILD_MANIFEST_JSON__;
+      const assetBundle = __EMBEDDED_ASSET_BUNDLE_JSON__;
+      const blobUrls = new Set();
+      const assetByteCache = new Map();
+      function decodeBase64Bytes(base64){const binary=atob(base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i+=1)bytes[i]=binary.charCodeAt(i);return bytes;}
+      function getAsset(dependencyId,assetKey){const asset=assetBundle.dependencies?.[dependencyId]?.assets?.[assetKey];if(!asset)throw new Error(`Embedded asset not found: ${dependencyId}/${assetKey}`);return asset;}
+      async function inflateAsset(asset){const stored=decodeBase64Bytes(asset.base64);if(!asset.compression||asset.compression==='none')return stored;if(asset.compression!=='gzip')throw new Error(`Unsupported embedded asset compression: ${asset.compression}`);if(typeof DecompressionStream!=='function')throw new Error('This browser cannot expand gzip-compressed embedded assets.');const stream=new Blob([stored]).stream().pipeThrough(new DecompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer());}
+      window.StandaloneAssets=Object.freeze({manifest:BUILD_MANIFEST,list(){return Object.entries(assetBundle.dependencies||{}).flatMap(([dependencyId,dependency])=>Object.keys(dependency.assets||{}).map(assetKey=>`${dependencyId}/${assetKey}`));},has(dependencyId,assetKey){return Boolean(assetBundle.dependencies?.[dependencyId]?.assets?.[assetKey]);},bytes(dependencyId,assetKey){const asset=getAsset(dependencyId,assetKey);if(asset.compression&&asset.compression!=='none')throw new Error('Use bytesAsync for compressed assets.');return decodeBase64Bytes(asset.base64);},async bytesAsync(dependencyId,assetKey){const key=`${dependencyId}/${assetKey}`;if(!assetByteCache.has(key))assetByteCache.set(key,inflateAsset(getAsset(dependencyId,assetKey)));return new Uint8Array(await assetByteCache.get(key));},text(dependencyId,assetKey){return new TextDecoder().decode(this.bytes(dependencyId,assetKey));},async textAsync(dependencyId,assetKey){return new TextDecoder().decode(await this.bytesAsync(dependencyId,assetKey));},blobUrl(dependencyId,assetKey){const asset=getAsset(dependencyId,assetKey);const url=URL.createObjectURL(new Blob([this.bytes(dependencyId,assetKey)],{type:asset.mime||'application/octet-stream'}));blobUrls.add(url);return url;},async blobUrlAsync(dependencyId,assetKey){const asset=getAsset(dependencyId,assetKey);const url=URL.createObjectURL(new Blob([await this.bytesAsync(dependencyId,assetKey)],{type:asset.mime||'application/octet-stream'}));blobUrls.add(url);return url;},async loadClassicScript(dependencyId,assetKey,globalName=''){const sourceUrl=await this.blobUrlAsync(dependencyId,assetKey);try{await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=sourceUrl;script.onload=resolve;script.onerror=reject;document.head.append(script);});return globalName?window[globalName]:true;}finally{URL.revokeObjectURL(sourceUrl);blobUrls.delete(sourceUrl);}},async importModule(dependencyId,assetKey){const sourceUrl=await this.blobUrlAsync(dependencyId,assetKey);try{return await import(sourceUrl);}finally{URL.revokeObjectURL(sourceUrl);blobUrls.delete(sourceUrl);}}});
+      window.addEventListener('pagehide',()=>{blobUrls.forEach(url=>URL.revokeObjectURL(url));blobUrls.clear();});
+
+      const translations={
+        ja:{brandMeta:'ToDoリスト・有限ボード・完了履歴',helpTitle:'使い方と注意事項',close:'閉じる',introTitle:'やることを、キャパの中に収める。',lead:'タスクには大きさがある。有限のボードに置いて、今抱えている仕事量を目で見て調整します。',localBadge:'完全ローカル処理',tasksTitle:'タスク一覧',addTask:'追加',searchTasks:'タスクを検索',searchPlaceholder:'タスクを検索',filterLabel:'表示フィルター',filterAll:'すべて',filterUnplaced:'未配置',filterPlaced:'配置済み',historyTitle:'完了履歴',clearHistory:'すべて削除',clearHistoryTitle:'完了履歴をすべて削除しますか？',clearHistoryMessage:'完了履歴をすべて削除します。この操作は元に戻せません。',historyCleared:'完了履歴をすべて削除しました',historyEmptyTitle:'完了したタスクはまだありません',historyEmptyBody:'ボードのチェックボタンから完了すると、ここに履歴が残ります。',historyRestore:'タスクへ戻す',completedAt:'完了',boardTitle:'キャパシティボード',miniBoard:'ミニボード',miniBoardClose:'ミニボードを閉じる',miniBoardUnsupported:'このブラウザーではミニボードを利用できません。対応ブラウザーのHTTPSページでお試しください。',miniBoardFailed:'ミニボードを開けませんでした',used:'使用',compact:'詰め直す',clearBoard:'全て外す',selectedTask:'配置するタスク:',cancel:'キャンセル',boardAria:'タスク配置ボード',freeCells:'空きマス',largestSpace:'最大の空き長方形',unplacedCount:'未配置タスク',settingsTitle:'ボードとデータ',settingsSubtitle:'ボードサイズはいつでも変更できます。縮小で収まらないタスクは一覧へ戻ります。',boardSize:'ボードサイズ',boardSizeHelp:'4×4、5×5、7×7、9×9のプリセット、または縦横を個別に指定できます。',columns:'横',rows:'縦',apply:'適用',backupTitle:'バックアップ',backupHelp:'タスク・完了履歴・配置・ボードサイズをJSONで保存できます。',outputFilename:'ファイル名',outputFilenameHint:'拡張子は自動で .json が付きます',export:'保存',import:'JSONから復元',dataTitle:'データ管理',dataHelp:'タスクと完了履歴はこのブラウザーのlocalStorageに自動保存されます。',resetAll:'すべてリセット',buildInfo:'Version',footer:'Browser Kitty · 完全ローカル処理',navTasks:'タスク',navBoard:'ボード',navHistory:'履歴',navSettings:'設定',newTask:'タスクを追加',editTask:'タスクを編集',taskName:'タスク名',taskNamePlaceholder:'例: READMEを更新',notePlaceholder:'完了条件や補足',taskSize:'大きさ',otherSize:'その他',viewNote:'メモを見る',dragReorder:'ドラッグで並べ替え',historyDeleted:'完了履歴から削除しました',miniUndo:'元に戻す',important:'重要',importantHelp:'重要タスクはボード上で色を変えて目立たせます。',widthCells:'横マス',heightCells:'縦マス',noteOptional:'メモ（任意）',saveTask:'保存',helpBasicsTitle:'基本操作',helpStep1:'まずタスク一覧へタスクを追加し、自分が感じる仕事量をマス数で決めます。',helpStep2:'「配置」を押してからボードの空きマスを選ぶか、PCではタスクをボードへドラッグします。',helpStep3:'ボードサイズは4×4、5×5、7×7、9×9または3〜16マスの任意サイズへ変更できます。',helpStep4:'ボードから溢れる位置や、他タスクと重なる位置には置けません。空き容量だけでなく「最大の空き長方形」も確認できます。',helpPrivacyTitle:'プライバシー',helpPrivacyBody:'タスクと配置はブラウザー内で処理され、外部へ送信されません。実行時ネットワーク通信はCSPでも遮断しています。',helpNotesTitle:'注意事項',helpNoteStorage:'データはlocalStorageへ自動保存します。ブラウザーのサイトデータ削除で消える場合があるため、必要ならJSONバックアップを保存してください。',helpNoteResize:'ボードを小さくしたとき、収まらなくなったタスクは削除せず未配置として一覧へ戻します。',helpNoteDrag:'スマホではドラッグ操作より「配置→マスをタップ」を推奨します。',helpMiniBoard:'対応ブラウザーでは「ミニボード」でボードを常に手前へ表示できます。ミニボードからもタスクを完了できます。',helpOffline:'配布物は単一HTMLです。ローカルで直接開いて利用できます。',taskSingular:'件',tasksUnit:'件',cellsUnit:'マス',placed:'配置済み',unplaced:'未配置',place:'配置',unplace:'外す',complete:'完了',edit:'編集',delete:'削除',noTasksTitle:'タスクがありません',noTasksBody:'まずは「追加」から、やることと大きさを登録してください。',noMatchesTitle:'該当するタスクがありません',noMatchesBody:'検索語やフィルターを変更してください。',taskAdded:'タスクを追加しました',taskUpdated:'タスクを更新しました',taskDeleted:'タスクを削除しました',taskCompleted:'タスクを完了しました',taskRestored:'タスク一覧へ戻しました',undo:'元に戻す',undone:'元に戻しました',selectCell:'ボードの置きたいマスを選んでください',placedToast:'ボードに配置しました',unplacedToast:'ボードから外しました',cannotPlace:'ここには置けません',boardCleared:'すべてのタスクをボードから外しました',nothingToCompact:'配置済みタスクはありません',compacted:'ボードを詰め直しました',boardResized:'ボードサイズを変更しました',tasksReturned:'件のタスクが未配置へ戻りました',backupSaved:'バックアップを保存しました',backupLoaded:'バックアップを復元しました',invalidBackup:'このバックアップは読み込めません',resetTitle:'すべてリセットしますか？',resetMessage:'タスク、完了履歴、配置、ボードサイズをすべて初期状態へ戻します。この操作は元に戻せません。',resetConfirm:'リセット',resetDone:'初期状態へ戻しました',deleteTitle:'タスクを削除しますか？',deleteMessage:'このタスクを一覧から削除します。',deleteConfirm:'削除',sizeTooLarge:'タスクの大きさがボードより大きいため未配置に戻しました',customSizeError:'ボードサイズは縦横とも3〜16で指定してください。',taskSizeError:'タスクサイズは縦横とも1〜8で指定してください。',confirmTitle:'確認',confirmAction:'実行する'},
+        en:{brandMeta:'To-do list · Finite board · Completion history',helpTitle:'How to use & notes',close:'Close',introTitle:'Fit your work inside your capacity.',lead:'Tasks have size. Place them on a finite board and make your workload visible before taking on more.',localBadge:'Fully local',tasksTitle:'Task list',addTask:'Add',searchTasks:'Search tasks',searchPlaceholder:'Search tasks',filterLabel:'Task filter',filterAll:'All',filterUnplaced:'Unplaced',filterPlaced:'Placed',historyTitle:'Completion history',clearHistory:'Clear all',clearHistoryTitle:'Clear all completion history?',clearHistoryMessage:'This permanently deletes every item in completion history. This cannot be undone.',historyCleared:'Completion history cleared',historyEmptyTitle:'No completed tasks yet',historyEmptyBody:'Complete a task from the board and it will appear here.',historyRestore:'Restore to tasks',completedAt:'Completed',boardTitle:'Capacity board',miniBoard:'Mini board',miniBoardClose:'Close mini board',miniBoardUnsupported:'Mini board is not available in this browser. Try a supported browser on an HTTPS page.',miniBoardFailed:'Could not open the mini board',used:'used',compact:'Compact',clearBoard:'Remove all',selectedTask:'Task to place:',cancel:'Cancel',boardAria:'Task capacity board',freeCells:'Free cells',largestSpace:'Largest free rectangle',unplacedCount:'Unplaced tasks',settingsTitle:'Board & data',settingsSubtitle:'Resize the board anytime. Tasks that no longer fit return to the list.',boardSize:'Board size',boardSizeHelp:'Use 4×4, 5×5, 7×7, or 9×9 presets, or set rows and columns independently.',columns:'Columns',rows:'Rows',apply:'Apply',backupTitle:'Backup',backupHelp:'Save tasks, completion history, positions, and board size as JSON.',outputFilename:'Filename',outputFilenameHint:'The .json extension is added automatically',export:'Save',import:'Restore JSON',dataTitle:'Data',dataHelp:'Tasks and completion history are automatically saved to localStorage in this browser.',resetAll:'Reset all',buildInfo:'Version',footer:'Browser Kitty · Fully local',navTasks:'Tasks',navBoard:'Board',navHistory:'History',navSettings:'Settings',newTask:'Add task',editTask:'Edit task',taskName:'Task name',taskNamePlaceholder:'e.g. Update README',notePlaceholder:'Done criteria or extra context',taskSize:'Size',otherSize:'Other',viewNote:'View note',dragReorder:'Drag to reorder',historyDeleted:'Removed from completion history',miniUndo:'Undo',important:'Important',importantHelp:'Important tasks use a different color on the board.',widthCells:'Width',heightCells:'Height',noteOptional:'Note (optional)',saveTask:'Save',helpBasicsTitle:'Basics',helpStep1:'Add tasks to the list first, then choose a size that represents how heavy each task feels.',helpStep2:'Choose Place and tap an empty cell, or drag tasks onto the board on desktop.',helpStep3:'The board can be 4×4, 5×5, 7×7, 9×9, or any custom 3–16 rows and columns.',helpStep4:'Tasks cannot overflow the board or overlap. The app also shows the largest contiguous free rectangle.',helpPrivacyTitle:'Privacy',helpPrivacyBody:'Tasks and positions are processed only in this browser. CSP blocks runtime network connections.',helpNotesTitle:'Notes',helpNoteStorage:'Data is stored in localStorage. Clearing site data may remove it, so save a JSON backup when needed.',helpNoteResize:'When the board shrinks, tasks that no longer fit are kept in the list as unplaced.',helpNoteDrag:'On phones, Place → tap a cell is more reliable than drag-and-drop.',helpMiniBoard:'On supported browsers, Mini board keeps the board always on top and lets you complete tasks there too.',helpOffline:'The release is one self-contained HTML file and can be opened directly.',taskSingular:'task',tasksUnit:'tasks',cellsUnit:'cells',placed:'Placed',unplaced:'Unplaced',place:'Place',unplace:'Remove',complete:'Complete',edit:'Edit',delete:'Delete',noTasksTitle:'No tasks yet',noTasksBody:'Use Add to create a task and choose its size.',noMatchesTitle:'No matching tasks',noMatchesBody:'Change the search text or filter.',taskAdded:'Task added',taskUpdated:'Task updated',taskDeleted:'Task deleted',taskCompleted:'Task completed',taskRestored:'Restored to task list',undo:'Undo',undone:'Restored',selectCell:'Tap the cell where you want to place it',placedToast:'Placed on the board',unplacedToast:'Removed from board',cannotPlace:'It does not fit here',boardCleared:'Removed all tasks from the board',nothingToCompact:'There are no placed tasks',compacted:'Compacted the board',boardResized:'Board resized',tasksReturned:'tasks returned to the unplaced list',backupSaved:'Backup saved',backupLoaded:'Backup restored',invalidBackup:'This backup cannot be loaded',resetTitle:'Reset everything?',resetMessage:'This deletes all tasks, completion history, positions, and board settings and returns to the initial state. This cannot be undone.',resetConfirm:'Reset',resetDone:'Reset complete',deleteTitle:'Delete this task?',deleteMessage:'This removes the task from the list.',deleteConfirm:'Delete',sizeTooLarge:'The task is larger than the board and was returned to the unplaced list',customSizeError:'Board rows and columns must be between 3 and 16.',taskSizeError:'Task width and height must be between 1 and 8.',confirmTitle:'Confirm',confirmAction:'Continue'}
+      };
+
+      const $=selector=>document.querySelector(selector);
+      const $$=selector=>Array.from(document.querySelectorAll(selector));
+      const storageKey=`${APP_CONFIG.slug}:state-v1`;
+      const languageKey=`${APP_CONFIG.slug}:language`;
+      const initialState=()=>{const isJa=(readStorage(languageKey)||detectLanguage())==='ja';return{version:1,board:{rows:5,cols:5},tasks:[{id:crypto.randomUUID?.()||`t-${Date.now()}-1`,title:isJa?'READMEを更新':'Update README',note:isJa?'公開前に使い方とスクリーンショットを確認':'Review usage and screenshots before release',w:2,h:1,row:0,col:0,important:true,createdAt:Date.now()-3000},{id:crypto.randomUUID?.()||`t-${Date.now()}-2`,title:isJa?'新機能を実装':'Build the new feature',note:isJa?'まず最小スコープを完成させる':'Finish the smallest useful scope first',w:3,h:2,row:1,col:0,important:false,createdAt:Date.now()-2000},{id:crypto.randomUUID?.()||`t-${Date.now()}-3`,title:isJa?'メール返信':'Reply to email',note:'',w:1,h:1,row:null,col:null,important:false,createdAt:Date.now()-1000}],history:[]};};
+      let state=loadState();
+      let language=readStorage(languageKey)||detectLanguage();
+      let filter='all';
+      let selectedTaskId=null;
+      let editingTaskId=null;
+      let draggedTaskId=null;
+      let draggedHistoryId=null;
+      let dragOrigin=null;
+      let dragGrabOffsetRow=0;
+      let dragGrabOffsetCol=0;
+      let hoverCell=null;
+      let miniBoardWindow=null;
+      let lastMiniCompletedId=null;
+      let lastMiniCompletedTask=null;
+      let boardNoteTaskId=null;
+
+      function readStorage(key){try{return localStorage.getItem(key);}catch{return null;}}
+      function writeStorage(key,value){try{localStorage.setItem(key,value);}catch{/* localStorage can be unavailable */}}
+      function detectLanguage(){if(APP_CONFIG.defaultLanguage==='ja'||APP_CONFIG.defaultLanguage==='en')return APP_CONFIG.defaultLanguage;return (navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en';}
+      function t(key){return translations[language]?.[key]??translations.en[key]??key;}
+      function loadState(){try{const raw=readStorage(storageKey);if(!raw)return initialState();const parsed=JSON.parse(raw);return normalizeState(parsed);}catch{return initialState();}}
+      function normalizeState(input){const rows=clampInt(input?.board?.rows,3,16,5);const cols=clampInt(input?.board?.cols,3,16,5);const tasks=Array.isArray(input?.tasks)?input.tasks.slice(0,500).map((task,index)=>({id:String(task.id||`task-${Date.now()}-${index}`),title:String(task.title||'Untitled').slice(0,120),note:String(task.note||'').slice(0,400),w:clampInt(task.w,1,8,1),h:clampInt(task.h,1,8,1),row:Number.isInteger(task.row)?task.row:null,col:Number.isInteger(task.col)?task.col:null,important:Boolean(task.important),createdAt:Number(task.createdAt)||Date.now()})):[];const history=Array.isArray(input?.history)?input.history.slice(0,500).map((task,index)=>({id:String(task.id||`history-${Date.now()}-${index}`),title:String(task.title||'Untitled').slice(0,120),note:String(task.note||'').slice(0,400),w:clampInt(task.w,1,8,1),h:clampInt(task.h,1,8,1),important:Boolean(task.important),createdAt:Number(task.createdAt)||Date.now(),completedAt:Number(task.completedAt)||Date.now()})):[];const normalized={version:1,board:{rows,cols},tasks,history};sanitizePlacements(normalized);return normalized;}
+      function clampInt(value,min,max,fallback){const n=Number.parseInt(value,10);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback;}
+      function saveState(){writeStorage(storageKey,JSON.stringify(state));}
+      function snapshot(){return JSON.parse(JSON.stringify(state));}
+      function restoreSnapshot(before){state=normalizeState(before);saveState();selectedTaskId=null;renderAll();showToast(t('undone'));}
+
+      const AppToast=(()=>{const root=$('#appToast'),message=$('#appToastMessage'),action=$('#appToastAction');let timer=0,handler=null;function dismiss(){clearTimeout(timer);root.classList.remove('show');handler=null;}function show({message:text='',actionLabel='',onAction=null,duration=3200}={}){clearTimeout(timer);message.textContent=String(text);handler=typeof onAction==='function'?onAction:null;action.textContent=actionLabel;action.hidden=!handler||!actionLabel;root.classList.add('show');if(duration>0)timer=setTimeout(dismiss,duration);return{dismiss};}action.addEventListener('click',()=>{const fn=handler;dismiss();if(fn)fn();});return Object.freeze({show,dismiss});})();
+      window.AppToast=AppToast;
+      function showToast(message,options={}){AppToast.show({message,...options});}
+
+      const AppConfirm=(()=>{const dialog=$('#appConfirmDialog'),title=$('#appConfirmTitle'),message=$('#appConfirmMessage'),close=$('#appConfirmClose'),cancel=$('#appConfirmCancel'),ok=$('#appConfirmOk');let resolver=null,restoreFocus=null;function finish(result){if(!dialog.open)return;const resolve=resolver;resolver=null;dialog.close();if(restoreFocus instanceof HTMLElement&&restoreFocus.isConnected)restoreFocus.focus({preventScroll:true});restoreFocus=null;if(resolve)resolve(result);}function ask(options={}){if(dialog.open)finish(false);title.textContent=options.title||t('confirmTitle');message.textContent=options.message||'';cancel.textContent=options.cancelLabel||t('cancel');ok.textContent=options.confirmLabel||t('confirmAction');ok.classList.toggle('danger',options.tone==='danger');ok.classList.toggle('primary',options.tone!=='danger');restoreFocus=document.activeElement;return new Promise(resolve=>{resolver=resolve;dialog.showModal();requestAnimationFrame(()=>cancel.focus({preventScroll:true}));});}close.addEventListener('click',()=>finish(false));cancel.addEventListener('click',()=>finish(false));ok.addEventListener('click',()=>finish(true));dialog.addEventListener('cancel',e=>{e.preventDefault();finish(false);});dialog.addEventListener('click',e=>{const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)finish(false);});return Object.freeze({ask});})();
+      window.AppConfirm=AppConfirm;
+
+      function uid(){return crypto.randomUUID?.()||`task-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
+      function isPlaced(task){return Number.isInteger(task.row)&&Number.isInteger(task.col);}
+      function getTask(id){return state.tasks.find(task=>task.id===id)||null;}
+      function area(task){return task.w*task.h;}
+      function occupancy(ignoreTaskId=null){const matrix=Array.from({length:state.board.rows},()=>Array(state.board.cols).fill(null));for(const task of state.tasks){if(task.id===ignoreTaskId||!isPlaced(task))continue;for(let r=task.row;r<task.row+task.h;r+=1)for(let c=task.col;c<task.col+task.w;c+=1)if(matrix[r]?.[c]!==undefined)matrix[r][c]=task.id;}return matrix;}
+      function canPlace(task,row,col,ignoreTaskId=task.id){if(row<0||col<0||row+task.h>state.board.rows||col+task.w>state.board.cols)return false;const matrix=occupancy(ignoreTaskId);for(let r=row;r<row+task.h;r+=1)for(let c=col;c<col+task.w;c+=1)if(matrix[r][c])return false;return true;}
+      function placeTask(id,row,col){const task=getTask(id);if(!task||!canPlace(task,row,col))return false;task.row=row;task.col=col;selectedTaskId=null;hoverCell=null;saveState();renderAll();showToast(t('placedToast'));return true;}
+      function unplaceTask(id,{toast=true}={}){const task=getTask(id);if(!task||!isPlaced(task))return;const before=snapshot();task.row=null;task.col=null;if(selectedTaskId===id)selectedTaskId=null;saveState();renderAll();if(toast)showToast(t('unplacedToast'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}
+      function completeTask(id,{source='main'}={}){const task=getTask(id);if(!task)return;const before=snapshot();state.tasks=state.tasks.filter(item=>item.id!==id);state.history.unshift({id:task.id,title:task.title,note:task.note,w:task.w,h:task.h,important:Boolean(task.important),createdAt:task.createdAt,completedAt:Date.now()});if(source==='mini'){lastMiniCompletedId=task.id;lastMiniCompletedTask=JSON.parse(JSON.stringify(task));}if(selectedTaskId===id)selectedTaskId=null;if(boardNoteTaskId===id)hideBoardNote();saveState();renderAll();showToast(t('taskCompleted'),{actionLabel:t('undo'),onAction:()=>{if(lastMiniCompletedId===id){lastMiniCompletedId=null;lastMiniCompletedTask=null;}restoreSnapshot(before);},duration:6000});}
+      function restoreCompletedTask(id,{toast=true}={}){const index=state.history.findIndex(item=>item.id===id);if(index<0)return false;const before=snapshot();const [task]=state.history.splice(index,1);state.tasks.push({id:task.id,title:task.title,note:task.note,w:task.w,h:task.h,row:null,col:null,important:Boolean(task.important),createdAt:task.createdAt});if(lastMiniCompletedId===id){lastMiniCompletedId=null;lastMiniCompletedTask=null;}saveState();renderAll();if(toast)showToast(t('taskRestored'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});return true;}
+      function deleteHistoryItem(id){const index=state.history.findIndex(item=>item.id===id);if(index<0)return;const before=snapshot();state.history.splice(index,1);if(lastMiniCompletedId===id){lastMiniCompletedId=null;lastMiniCompletedTask=null;}saveState();renderAll();showToast(t('historyDeleted'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}
+      async function clearHistory(){if(!state.history.length)return;const ok=await AppConfirm.ask({title:t('clearHistoryTitle'),message:t('clearHistoryMessage'),confirmLabel:t('clearHistory'),tone:'danger'});if(!ok)return;state.history=[];lastMiniCompletedId=null;lastMiniCompletedTask=null;saveState();renderAll();showToast(t('historyCleared'));}
+      function sanitizePlacements(targetState){const matrix=Array.from({length:targetState.board.rows},()=>Array(targetState.board.cols).fill(false));for(const task of targetState.tasks){if(!Number.isInteger(task.row)||!Number.isInteger(task.col)){task.row=null;task.col=null;continue;}if(task.row<0||task.col<0||task.row+task.h>targetState.board.rows||task.col+task.w>targetState.board.cols){task.row=null;task.col=null;continue;}let blocked=false;for(let r=task.row;r<task.row+task.h;r+=1)for(let c=task.col;c<task.col+task.w;c+=1)if(matrix[r][c])blocked=true;if(blocked){task.row=null;task.col=null;continue;}for(let r=task.row;r<task.row+task.h;r+=1)for(let c=task.col;c<task.col+task.w;c+=1)matrix[r][c]=true;}}
+      function largestFreeRectangle(){const matrix=occupancy();const heights=Array(state.board.cols).fill(0);let best={area:0,w:0,h:0};for(let r=0;r<state.board.rows;r+=1){for(let c=0;c<state.board.cols;c+=1)heights[c]=matrix[r][c]?0:heights[c]+1;const stack=[];for(let c=0;c<=state.board.cols;c+=1){const current=c===state.board.cols?0:heights[c];let start=c;while(stack.length&&stack[stack.length-1].height>current){const item=stack.pop();const w=c-item.index;const rectArea=item.height*w;if(rectArea>best.area)best={area:rectArea,w,h:item.height};start=item.index;}if(!stack.length||stack[stack.length-1].height<current)stack.push({index:start,height:current});}}return best;}
+      function findFirstFit(task,matrix){for(let r=0;r<=state.board.rows-task.h;r+=1){for(let c=0;c<=state.board.cols-task.w;c+=1){let ok=true;for(let rr=r;rr<r+task.h&&ok;rr+=1)for(let cc=c;cc<c+task.w;cc+=1)if(matrix[rr][cc]){ok=false;break;}if(ok)return{row:r,col:c};}}return null;}
+
+      function clearDragDecorations(){$$('.task-card').forEach(card=>card.classList.remove('reorder-before','reorder-after','dragging'));$$('.history-item').forEach(item=>item.classList.remove('dragging'));$$('.board-task').forEach(item=>item.classList.remove('dragging'));$('#taskList')?.classList.remove('is-drop-target');$('#historyList')?.classList.remove('is-drop-target');document.body.classList.remove('is-dragging-task');clearPreview();}
+      function boardCellFromPoint(clientX,clientY){const cells=$$('#board .grid-cell');let nearest=null;let nearestDistance=Infinity;for(const cell of cells){const rect=cell.getBoundingClientRect();const row=Number(cell.dataset.row),col=Number(cell.dataset.col);if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom)return{row,col};const dx=clientX<rect.left?rect.left-clientX:clientX>rect.right?clientX-rect.right:0;const dy=clientY<rect.top?rect.top-clientY:clientY>rect.bottom?clientY-rect.bottom:0;const distance=dx*dx+dy*dy;if(distance<nearestDistance){nearestDistance=distance;nearest={row,col};}}return nearestDistance<=36?nearest:null;}
+      function boardDropPosition(id,clientX,clientY){const task=getTask(id);if(!task)return null;const cell=boardCellFromPoint(clientX,clientY);if(!cell)return null;const row=cell.row-(dragOrigin==='board'?dragGrabOffsetRow:0);const col=cell.col-(dragOrigin==='board'?dragGrabOffsetCol:0);return{row,col};}
+      function beginTaskDrag(id,origin,element,event){draggedTaskId=id;draggedHistoryId=null;dragOrigin=origin;dragGrabOffsetRow=0;dragGrabOffsetCol=0;if(origin==='board'){const task=getTask(id),cell=event?boardCellFromPoint(event.clientX,event.clientY):null;if(task&&cell&&isPlaced(task)){dragGrabOffsetRow=Math.min(task.h-1,Math.max(0,cell.row-task.row));dragGrabOffsetCol=Math.min(task.w-1,Math.max(0,cell.col-task.col));}}document.body.classList.add('is-dragging-task');element?.classList.add('dragging');if(event?.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',id);}}
+      function beginHistoryDrag(id,element,event){draggedTaskId=null;draggedHistoryId=id;dragOrigin='history';dragGrabOffsetRow=0;dragGrabOffsetCol=0;element?.classList.add('dragging');if(event?.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',id);}}
+      function endDrag(){draggedTaskId=null;draggedHistoryId=null;dragOrigin=null;dragGrabOffsetRow=0;dragGrabOffsetCol=0;clearDragDecorations();}
+      function reorderTask(sourceId,targetId,position='before'){if(sourceId===targetId)return;const sourceIndex=state.tasks.findIndex(task=>task.id===sourceId);const targetIndex=state.tasks.findIndex(task=>task.id===targetId);if(sourceIndex<0||targetIndex<0)return;const [task]=state.tasks.splice(sourceIndex,1);let insertAt=state.tasks.findIndex(item=>item.id===targetId);if(insertAt<0)insertAt=state.tasks.length;if(position==='after')insertAt+=1;state.tasks.splice(insertAt,0,task);saveState();renderTaskList();}
+      function moveTaskToEnd(id){const index=state.tasks.findIndex(task=>task.id===id);if(index<0||index===state.tasks.length-1)return;const [task]=state.tasks.splice(index,1);state.tasks.push(task);saveState();renderTaskList();}
+      function showBoardNote(task,anchor){if(!task?.note)return;boardNoteTaskId=task.id;const popover=$('#boardNotePopover');$('#boardNoteTitle').textContent=task.title;$('#boardNoteText').textContent=task.note;popover.hidden=false;const rect=anchor.getBoundingClientRect();const width=Math.min(320,window.innerWidth-24);const provisionalLeft=Math.min(window.innerWidth-width-12,Math.max(12,rect.left));popover.style.width=`${width}px`;popover.style.left=`${provisionalLeft}px`;popover.style.top='12px';requestAnimationFrame(()=>{const ph=popover.offsetHeight;let top=rect.bottom+8;if(top+ph>window.innerHeight-12)top=Math.max(12,rect.top-ph-8);popover.style.top=`${top}px`;});}
+      function hideBoardNote(){boardNoteTaskId=null;const popover=$('#boardNotePopover');if(popover)popover.hidden=true;}
+      function renderAll(){if(boardNoteTaskId&&!getTask(boardNoteTaskId))hideBoardNote();renderTaskList();renderHistory();renderBoard();renderSettings();renderSelection();renderMiniBoard();renderMiniBoardButton();}
+      function renderTaskList(){const list=$('#taskList');const query=$('#taskSearch').value.trim().toLocaleLowerCase(language);const items=state.tasks.filter(task=>{if(filter==='placed'&&!isPlaced(task))return false;if(filter==='unplaced'&&isPlaced(task))return false;if(query&&!`${task.title} ${task.note}`.toLocaleLowerCase(language).includes(query))return false;return true;});$('#taskCountLabel').textContent=`${state.tasks.length} ${t('tasksUnit')}`;list.replaceChildren();if(!items.length){const empty=document.createElement('div');empty.className='empty-state';empty.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h4"/></svg><div><strong>${escapeHtml(state.tasks.length?t('noMatchesTitle'):t('noTasksTitle'))}</strong><span>${escapeHtml(state.tasks.length?t('noMatchesBody'):t('noTasksBody'))}</span></div>`;list.append(empty);}else for(const task of items){const card=document.createElement('article');card.className=`task-card${selectedTaskId===task.id?' is-selected':''}${task.important?' is-important':''}`;card.draggable=true;card.dataset.taskId=task.id;const glyphCells=Array.from({length:task.w*task.h},()=>'<i></i>').join('');const unplaceIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v14H5z"/><path d="m9 12 3 3 5-6"/><path d="M4 20 20 4"/></svg>';const placeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/><path d="m8 8 2 2 4-4"/></svg>';const editIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"/></svg>';const deleteIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>';card.innerHTML=`<div class="task-card-head"><span class="drag-handle" aria-hidden="true" title="${escapeHtml(t('dragReorder'))}"><svg viewBox="0 0 12 20" fill="currentColor"><circle cx="3" cy="4" r="1.2"/><circle cx="9" cy="4" r="1.2"/><circle cx="3" cy="10" r="1.2"/><circle cx="9" cy="10" r="1.2"/><circle cx="3" cy="16" r="1.2"/><circle cx="9" cy="16" r="1.2"/></svg></span><span class="size-glyph" style="--gw:${task.w};--gh:${task.h}" aria-hidden="true">${glyphCells}</span><div class="task-card-main"><h3 class="task-title">${escapeHtml(task.title)}</h3><div class="task-meta"><span class="badge">${task.w} × ${task.h} · ${area(task)} ${escapeHtml(t('cellsUnit'))}</span>${task.important?`<span class="badge important">${escapeHtml(t('important'))}</span>`:''}<span class="badge ${isPlaced(task)?'placed':''}">${escapeHtml(isPlaced(task)?t('placed'):t('unplaced'))}</span></div><p class="task-note${task.note?'':' is-empty'}">${task.note?escapeHtml(task.note):'—'}</p></div></div><div class="task-actions"><button class="task-link primary" type="button" data-action="${isPlaced(task)?'unplace':'place'}">${isPlaced(task)?unplaceIcon:placeIcon}<span>${escapeHtml(isPlaced(task)?t('unplace'):t('place'))}</span></button><button class="task-link" type="button" data-action="edit">${editIcon}<span>${escapeHtml(t('edit'))}</span></button><button class="task-link danger" type="button" data-action="delete">${deleteIcon}<span>${escapeHtml(t('delete'))}</span></button></div>`;card.addEventListener('click',e=>{const action=e.target.closest('[data-action]')?.dataset.action;if(action){e.stopPropagation();handleTaskAction(task.id,action);return;}selectedTaskId=selectedTaskId===task.id?null:task.id;renderAll();});card.addEventListener('dragstart',e=>beginTaskDrag(task.id,'list',card,e));card.addEventListener('dragend',endDrag);card.addEventListener('dragover',e=>{if(dragOrigin!=='list'||!draggedTaskId||draggedTaskId===task.id)return;e.preventDefault();e.stopPropagation();const rect=card.getBoundingClientRect();const position=e.clientY<rect.top+rect.height/2?'before':'after';card.classList.toggle('reorder-before',position==='before');card.classList.toggle('reorder-after',position==='after');e.dataTransfer.dropEffect='move';});card.addEventListener('dragleave',()=>card.classList.remove('reorder-before','reorder-after'));card.addEventListener('drop',e=>{if(dragOrigin!=='list'||!draggedTaskId||draggedTaskId===task.id)return;e.preventDefault();e.stopPropagation();const rect=card.getBoundingClientRect();reorderTask(draggedTaskId,task.id,e.clientY<rect.top+rect.height/2?'before':'after');endDrag();});list.append(card);}list.ondragover=e=>{if(draggedHistoryId||(draggedTaskId&&dragOrigin==='board')||(draggedTaskId&&dragOrigin==='list'&&!e.target.closest('.task-card'))){e.preventDefault();list.classList.add('is-drop-target');e.dataTransfer.dropEffect='move';}};list.ondragleave=e=>{if(!list.contains(e.relatedTarget))list.classList.remove('is-drop-target');};list.ondrop=e=>{if(e.target.closest('.task-card')&&dragOrigin==='list')return;e.preventDefault();list.classList.remove('is-drop-target');if(draggedHistoryId)restoreCompletedTask(draggedHistoryId);else if(draggedTaskId&&dragOrigin==='board')unplaceTask(draggedTaskId);else if(draggedTaskId&&dragOrigin==='list')moveTaskToEnd(draggedTaskId);endDrag();};}
+      function renderHistory(){const list=$('#historyList');$('#historyCountLabel').textContent=`${state.history.length} ${t('tasksUnit')}`;const clearButton=$('#clearHistoryButton');clearButton.disabled=!state.history.length;clearButton.hidden=!state.history.length;list.replaceChildren();if(!state.history.length){const empty=document.createElement('div');empty.className='empty-state history-empty';empty.innerHTML=`<div><strong>${escapeHtml(t('historyEmptyTitle'))}</strong><span>${escapeHtml(t('historyEmptyBody'))}</span></div>`;list.append(empty);}else for(const task of [...state.history].sort((a,b)=>b.completedAt-a.completedAt)){const item=document.createElement('article');item.className='history-item';item.draggable=true;item.dataset.historyId=task.id;const when=new Date(task.completedAt).toLocaleString(language==='ja'?'ja-JP':'en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});item.innerHTML=`<div class="history-item-head"><div class="history-item-main"><h3 class="history-item-title">${escapeHtml(task.title)}</h3><div class="history-item-meta">${task.important?`${escapeHtml(t('important'))} · `:''}${escapeHtml(t('completedAt'))}: ${escapeHtml(when)} · ${task.w}×${task.h}</div></div><div class="history-actions"><button class="task-link primary history-restore" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8v5h5"/><path d="M5.5 12a7 7 0 1 0 2-5"/></svg><span>${escapeHtml(t('historyRestore'))}</span></button><button class="history-delete" type="button" aria-label="${escapeHtml(t('delete'))}" title="${escapeHtml(t('delete'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button></div></div>`;item.querySelector('.history-restore').addEventListener('click',()=>restoreCompletedTask(task.id));item.querySelector('.history-delete').addEventListener('click',()=>deleteHistoryItem(task.id));item.addEventListener('dragstart',e=>beginHistoryDrag(task.id,item,e));item.addEventListener('dragend',endDrag);list.append(item);}list.ondragover=e=>{if(draggedTaskId){e.preventDefault();list.classList.add('is-drop-target');e.dataTransfer.dropEffect='move';}};list.ondragleave=e=>{if(!list.contains(e.relatedTarget))list.classList.remove('is-drop-target');};list.ondrop=e=>{if(!draggedTaskId)return;e.preventDefault();list.classList.remove('is-drop-target');const id=draggedTaskId;endDrag();completeTask(id);};}
+      function renderBoard(){const board=$('#board');board.style.setProperty('--cols',state.board.cols);board.style.setProperty('--rows',state.board.rows);board.replaceChildren();for(let r=0;r<state.board.rows;r+=1){for(let c=0;c<state.board.cols;c+=1){const cell=document.createElement('button');cell.type='button';cell.className='grid-cell';cell.dataset.row=r;cell.dataset.col=c;cell.style.gridRow=String(r+1);cell.style.gridColumn=String(c+1);cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',`${r+1}, ${c+1}`);cell.addEventListener('click',()=>{if(!selectedTaskId)return;const ok=placeTask(selectedTaskId,r,c);if(!ok)showToast(t('cannotPlace'));});cell.addEventListener('pointerenter',()=>previewPlacement(selectedTaskId,r,c));cell.addEventListener('pointerleave',()=>clearPreview());board.append(cell);}}for(const task of state.tasks.filter(isPlaced)){const block=document.createElement('div');block.className=`board-task${selectedTaskId===task.id?' is-selected':''}${task.important?' is-important':''}${task.note?' has-note':''}${area(task)===1?' is-compact':''}`;block.draggable=true;block.dataset.taskId=task.id;block.style.gridColumn=`${task.col+1} / span ${task.w}`;block.style.gridRow=`${task.row+1} / span ${task.h}`;block.setAttribute('tabindex','0');block.setAttribute('role','group');block.setAttribute('aria-label',`${task.title}, ${task.w} × ${task.h}`);const notePreview=task.note&&area(task)>1?`<button class="board-task-note-preview" type="button" aria-label="${escapeHtml(t('viewNote'))}" title="${escapeHtml(t('viewNote'))}">${escapeHtml(task.note)}</button>`:'';block.innerHTML=`<span class="board-task-title">${escapeHtml(task.title)}</span>${notePreview}<button class="board-task-complete" type="button" aria-label="${escapeHtml(t('complete'))}" title="${escapeHtml(t('complete'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-9"/></svg></button><span class="board-task-size">${task.w}×${task.h}</span>`;block.querySelector('.board-task-complete').addEventListener('click',e=>{e.stopPropagation();completeTask(task.id);});block.querySelector('.board-task-note-preview')?.addEventListener('click',e=>{e.stopPropagation();showBoardNote(task,e.currentTarget);});block.addEventListener('click',()=>{hideBoardNote();selectedTaskId=selectedTaskId===task.id?null:task.id;renderAll();});block.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectedTaskId=task.id;renderAll();}});block.addEventListener('dragstart',e=>{hideBoardNote();beginTaskDrag(task.id,'board',block,e);});block.addEventListener('dragend',endDrag);board.append(block);}board.ondragover=e=>{if(!draggedTaskId||draggedHistoryId)return;const position=boardDropPosition(draggedTaskId,e.clientX,e.clientY);if(!position)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';previewPlacement(draggedTaskId,position.row,position.col);};board.ondragleave=e=>{if(!board.contains(e.relatedTarget))clearPreview();};board.ondrop=e=>{if(!draggedTaskId||draggedHistoryId)return;const id=draggedTaskId;const position=boardDropPosition(id,e.clientX,e.clientY);e.preventDefault();e.stopPropagation();if(position){if(!placeTask(id,position.row,position.col))showToast(t('cannotPlace'));}else showToast(t('cannotPlace'));endDrag();};const used=state.tasks.filter(isPlaced).reduce((sum,task)=>sum+area(task),0);const total=state.board.rows*state.board.cols;const percent=total?Math.round(used/total*100):0;$('#capacityFill').style.width=`${percent}%`;$('#capacityPercent').textContent=`${percent}%`;$('#capacityCells').textContent=`${used} / ${total}`;$('#boardSizeLabel').textContent=`${state.board.cols} × ${state.board.rows} · ${total} ${t('cellsUnit')}`;$('#freeCellsValue').textContent=String(total-used);const largest=largestFreeRectangle();$('#largestSpaceValue').textContent=largest.area?`${largest.w} × ${largest.h}`:'0 × 0';$('#unplacedValue').textContent=String(state.tasks.filter(task=>!isPlaced(task)).length);}
+      function renderSettings(){$('#boardCols').value=state.board.cols;$('#boardRows').value=state.board.rows;$$('#boardPresets .preset').forEach(button=>button.classList.toggle('is-active',Number(button.dataset.rows)===state.board.rows&&Number(button.dataset.cols)===state.board.cols));}
+      function renderSelection(){const task=getTask(selectedTaskId);$('#selectionBar').classList.toggle('show',Boolean(task));$('#selectedTaskName').textContent=task?`${task.title} (${task.w}×${task.h})`:'';}
+      function previewPlacement(id,row,col){clearPreview();const task=getTask(id);if(!task)return;hoverCell={row,col};const valid=canPlace(task,row,col);for(let r=row;r<row+task.h;r+=1)for(let c=col;c<col+task.w;c+=1){const cell=$(`.grid-cell[data-row="${r}"][data-col="${c}"]`);if(cell)cell.classList.add(valid?'preview-valid':'preview-invalid');}}
+      function clearPreview(){$$('.grid-cell').forEach(cell=>cell.classList.remove('preview-valid','preview-invalid','drop-target'));hoverCell=null;}
+      function escapeHtml(value){return String(value).replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));}
+
+      function handleTaskAction(id,action){if(action==='place'){selectedTaskId=id;renderAll();showToast(t('selectCell'));showMobilePage('boardPage');return;}if(action==='unplace'){unplaceTask(id);return;}if(action==='edit'){openTaskDialog(id);return;}if(action==='delete'){deleteTask(id);}}
+      function isPresetSize(w,h){return $$('#sizePresets .size-preset[data-w]').some(button=>Number(button.dataset.w)===Number(w)&&Number(button.dataset.h)===Number(h));}
+      function setCustomSizeVisible(visible){const fields=$('#customSizeFields');fields.hidden=!visible;const custom=$('#sizePresets .size-preset[data-custom]');custom?.classList.toggle('is-active',visible);}
+      function openTaskDialog(id=null){editingTaskId=id;const task=id?getTask(id):null;$('#taskDialogTitle').textContent=t(task?'editTask':'newTask');$('#taskTitleInput').value=task?.title||'';$('#taskNoteInput').value=task?.note||'';$('#taskWidthInput').value=task?.w||2;$('#taskHeightInput').value=task?.h||1;$('#taskImportantInput').checked=Boolean(task?.important);updateSizePresetState();$('#taskDialog').showModal();requestAnimationFrame(()=>$('#taskTitleInput').focus());}
+      function closeTaskDialog(){if($('#taskDialog').open)$('#taskDialog').close();editingTaskId=null;}
+      function updateSizePresetState(){const w=Number($('#taskWidthInput').value),h=Number($('#taskHeightInput').value);const preset=isPresetSize(w,h);$$('#sizePresets .size-preset[data-w]').forEach(button=>button.classList.toggle('is-active',Number(button.dataset.w)===w&&Number(button.dataset.h)===h));setCustomSizeVisible(!preset);}
+      async function deleteTask(id){const task=getTask(id);if(!task)return;const ok=await AppConfirm.ask({title:t('deleteTitle'),message:`${t('deleteMessage')}\n\n${task.title}`,confirmLabel:t('deleteConfirm'),tone:'danger'});if(!ok)return;const before=snapshot();state.tasks=state.tasks.filter(item=>item.id!==id);if(selectedTaskId===id)selectedTaskId=null;saveState();renderAll();showToast(t('taskDeleted'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}
+      function submitTask(){const title=$('#taskTitleInput').value.trim();const w=clampInt($('#taskWidthInput').value,1,8,0);const h=clampInt($('#taskHeightInput').value,1,8,0);const important=$('#taskImportantInput').checked;if(!title){$('#taskTitleInput').focus();return;}if(!w||!h){showToast(t('taskSizeError'));return;}const before=snapshot();if(editingTaskId){const task=getTask(editingTaskId);if(!task)return;task.title=title.slice(0,120);task.note=$('#taskNoteInput').value.trim().slice(0,400);task.important=important;const sizeChanged=task.w!==w||task.h!==h;task.w=w;task.h=h;if(sizeChanged&&isPlaced(task)&&!canPlace(task,task.row,task.col,task.id)){task.row=null;task.col=null;showToast(t('sizeTooLarge'));}else showToast(t('taskUpdated'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}else{state.tasks.push({id:uid(),title:title.slice(0,120),note:$('#taskNoteInput').value.trim().slice(0,400),w,h,row:null,col:null,important,createdAt:Date.now()});showToast(t('taskAdded'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}saveState();closeTaskDialog();renderAll();}
+      function resizeBoard(rows,cols){if(rows<3||rows>16||cols<3||cols>16){showToast(t('customSizeError'));return;}if(rows===state.board.rows&&cols===state.board.cols)return;const before=snapshot();const placedBefore=state.tasks.filter(isPlaced).length;state.board={rows,cols};sanitizePlacements(state);const returned=placedBefore-state.tasks.filter(isPlaced).length;selectedTaskId=null;saveState();renderAll();const message=returned?`${t('boardResized')} · ${returned} ${t('tasksReturned')}`:t('boardResized');showToast(message,{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5500});}
+      function compactBoard(){const placed=state.tasks.filter(isPlaced);if(!placed.length){showToast(t('nothingToCompact'));return;}const before=snapshot();const sorted=[...placed].sort((a,b)=>area(b)-area(a)||b.h-a.h||a.createdAt-b.createdAt);const matrix=Array.from({length:state.board.rows},()=>Array(state.board.cols).fill(false));for(const task of sorted){const fit=findFirstFit(task,matrix);if(!fit){task.row=null;task.col=null;continue;}task.row=fit.row;task.col=fit.col;for(let r=fit.row;r<fit.row+task.h;r+=1)for(let c=fit.col;c<fit.col+task.w;c+=1)matrix[r][c]=true;}saveState();renderAll();showToast(t('compacted'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}
+      function clearBoard(){const placed=state.tasks.filter(isPlaced);if(!placed.length)return;const before=snapshot();placed.forEach(task=>{task.row=null;task.col=null;});selectedTaskId=null;saveState();renderAll();showToast(t('boardCleared'),{actionLabel:t('undo'),onAction:()=>restoreSnapshot(before),duration:5000});}
+      function normalizedFilenameBase(){const fallback='task-packing-backup';const input=$('#outputFilename');const cleaned=input.value.trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g,'-').replace(/\.+$/g,'').trim();let base=cleaned.replace(/\.json$/i,'')||fallback;if(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(base))base=`${base}-file`;input.value=base;return base.slice(0,120);}
+      function exportBackup(){const data={app:'task-packing',schemaVersion:1,exportedAt:new Date().toISOString(),state};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`${normalizedFilenameBase()}.json`;a.click();URL.revokeObjectURL(url);showToast(t('backupSaved'));}
+      async function importBackup(file){try{const text=await file.text();const data=JSON.parse(text);if(data?.app!=='task-packing'||data?.schemaVersion!==1||!data.state)throw new Error('Invalid backup');state=normalizeState(data.state);selectedTaskId=null;saveState();renderAll();showToast(t('backupLoaded'));}catch{showToast(t('invalidBackup'));}}
+      async function resetAll(){const ok=await AppConfirm.ask({title:t('resetTitle'),message:t('resetMessage'),confirmLabel:t('resetConfirm'),tone:'danger'});if(!ok)return;state=initialState();selectedTaskId=null;filter='all';$('#taskSearch').value='';saveState();renderAll();showToast(t('resetDone'));}
+
+      function undoMiniCompletion(){if(!lastMiniCompletedId)return false;const index=state.history.findIndex(item=>item.id===lastMiniCompletedId);if(index<0){lastMiniCompletedId=null;lastMiniCompletedTask=null;renderMiniBoard();return false;}const historyTask=state.history[index];state.history.splice(index,1);const source=lastMiniCompletedTask||historyTask;const restored={id:source.id,title:source.title,note:source.note||'',w:source.w,h:source.h,row:Number.isInteger(source.row)?source.row:null,col:Number.isInteger(source.col)?source.col:null,important:Boolean(source.important),createdAt:source.createdAt};if(isPlaced(restored)&&!canPlace(restored,restored.row,restored.col,restored.id)){restored.row=null;restored.col=null;}state.tasks.push(restored);lastMiniCompletedId=null;lastMiniCompletedTask=null;saveState();renderAll();return true;}
+      function renderMiniBoardButton(){const button=$('#miniBoardButton');if(!button)return;const open=Boolean(miniBoardWindow&&!miniBoardWindow.closed);button.classList.toggle('primary',open);button.querySelector('span').textContent=open?t('miniBoardClose'):t('miniBoard');}
+      function renderMiniBoard(){if(!miniBoardWindow||miniBoardWindow.closed)return;const doc=miniBoardWindow.document;const root=doc.getElementById('miniBoardRoot');if(!root)return;const used=state.tasks.filter(isPlaced).reduce((sum,task)=>sum+area(task),0);const total=state.board.rows*state.board.cols;const canUndo=Boolean(lastMiniCompletedId&&state.history.some(item=>item.id===lastMiniCompletedId));root.innerHTML=`<header><div><strong>${escapeHtml(language==='ja'?APP_CONFIG.nameJa:APP_CONFIG.name)}</strong><span>${state.board.cols} × ${state.board.rows} · ${used}/${total} ${escapeHtml(t('cellsUnit'))}</span></div><button class="mini-undo" type="button" ${canUndo?'':'disabled'}>↶ ${escapeHtml(t('miniUndo'))}</button></header><div class="mini-board" style="--cols:${state.board.cols};--rows:${state.board.rows}" aria-label="${escapeHtml(t('boardAria'))}"></div>`;root.querySelector('.mini-undo').addEventListener('click',undoMiniCompletion);const board=root.querySelector('.mini-board');for(let r=0;r<state.board.rows;r+=1)for(let c=0;c<state.board.cols;c+=1){const cell=doc.createElement('div');cell.className='mini-cell';cell.style.gridRow=String(r+1);cell.style.gridColumn=String(c+1);board.append(cell);}for(const task of state.tasks.filter(isPlaced)){const block=doc.createElement('div');block.className=`mini-task${task.important?' important':''}`;block.style.gridColumn=`${task.col+1} / span ${task.w}`;block.style.gridRow=`${task.row+1} / span ${task.h}`;block.innerHTML=`<span>${escapeHtml(task.title)}</span><button type="button" aria-label="${escapeHtml(t('complete'))}" title="${escapeHtml(t('complete'))}">✓</button>`;block.querySelector('button').addEventListener('click',()=>completeTask(task.id,{source:'mini'}));board.append(block);}}
+      async function toggleMiniBoard(){if(miniBoardWindow&&!miniBoardWindow.closed){miniBoardWindow.close();miniBoardWindow=null;renderMiniBoardButton();return;}if(!('documentPictureInPicture' in window)||typeof window.documentPictureInPicture?.requestWindow!=='function'){showToast(t('miniBoardUnsupported'));return;}try{miniBoardWindow=await window.documentPictureInPicture.requestWindow({width:430,height:520,preferInitialWindowPlacement:true});const doc=miniBoardWindow.document;doc.title=t('miniBoard');doc.head.innerHTML=`<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;color:#20211f;background:#f5f5f2}*{box-sizing:border-box}body{margin:0;padding:10px;background:#f5f5f2}#miniBoardRoot{display:grid;gap:8px}header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 2px}header div{min-width:0}header strong{display:block;font-size:13px}header span{display:block;margin-top:1px;color:#686b65;font-size:10px}.mini-undo{flex:0 0 auto;min-height:30px;padding:5px 8px;border:1px solid #dadbd6;border-radius:8px;background:#fff;color:#16624f;cursor:pointer;font-size:10px;font-weight:800}.mini-undo:disabled{opacity:.38;cursor:default}.mini-board{--cols:5;--rows:5;position:relative;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr));gap:2px;width:100%;aspect-ratio:var(--cols)/var(--rows);padding:4px;border:1px solid #bfc1ba;border-radius:12px;background:#dadbd6;overflow:hidden}.mini-cell{min-width:0;min-height:0;border-radius:3px;background:#fafaf8}.mini-task{position:relative;z-index:2;min-width:0;min-height:0;margin:1px;padding:6px 27px 6px 7px;border:1px solid rgba(22,98,79,.25);border-radius:7px;background:linear-gradient(145deg,#e7f3ee,#d9ece4);color:#124b3d;overflow:hidden}.mini-task.important{border-color:#c77900;background:linear-gradient(145deg,#fff3dc,#ffe0a7);color:#6f4700}.mini-task span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:clamp(8px,2.6vw,11px);font-weight:800;line-height:1.2}.mini-task button{position:absolute;top:4px;right:4px;width:20px;height:20px;padding:0;border:1px solid rgba(0,0,0,.12);border-radius:6px;background:rgba(255,255,255,.8);color:inherit;cursor:pointer;font-weight:900}</style>`;const root=doc.createElement('main');root.id='miniBoardRoot';doc.body.append(root);miniBoardWindow.addEventListener('pagehide',()=>{miniBoardWindow=null;renderMiniBoardButton();});renderMiniBoard();renderMiniBoardButton();}catch(error){miniBoardWindow=null;renderMiniBoardButton();showToast(`${t('miniBoardFailed')}: ${error?.name||''}`.trim());}}
+
+      function applyLanguage(){document.documentElement.lang=language;document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.title=t(el.dataset.i18nTitle);});document.querySelectorAll('[data-i18n-aria-label]').forEach(el=>{el.setAttribute('aria-label',t(el.dataset.i18nAriaLabel));});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder);});$('#languageButton').textContent=language==='ja'?'EN':'日本語';$('#languageButton').setAttribute('aria-label',language==='ja'?'英語に切り替え':'Switch to Japanese');document.title=language==='ja'?APP_CONFIG.nameJa:APP_CONFIG.name;$('#brandName').textContent=language==='ja'?APP_CONFIG.nameJa:APP_CONFIG.name;$('#footerName').textContent=language==='ja'?APP_CONFIG.nameJa:APP_CONFIG.name;renderAll();}
+      function showMobilePage(pageId){if(!window.matchMedia('(max-width:600px)').matches)return;$$('.app-mobile-page').forEach(page=>page.classList.toggle('is-mobile-active',page.id===pageId));$$('.mobile-nav-item').forEach(button=>button.classList.toggle('is-active',button.dataset.page===pageId));window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+
+      $('#languageButton').addEventListener('click',()=>{language=language==='ja'?'en':'ja';writeStorage(languageKey,language);applyLanguage();});
+      $('#helpButton').addEventListener('click',()=>$('#helpDialog').showModal());$('#closeHelpButton').addEventListener('click',()=>$('#helpDialog').close());
+      $('#helpDialog').addEventListener('click',e=>{const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.currentTarget.close();});
+      $('#addTaskButton').addEventListener('click',()=>openTaskDialog());$('#closeTaskDialog').addEventListener('click',closeTaskDialog);$('#cancelTaskButton').addEventListener('click',closeTaskDialog);
+      $('#taskForm').addEventListener('submit',e=>{e.preventDefault();submitTask();});
+      $$('#sizePresets .size-preset').forEach(button=>button.addEventListener('click',()=>{if(button.dataset.custom){setCustomSizeVisible(true);$$('#sizePresets .size-preset[data-w]').forEach(item=>item.classList.remove('is-active'));button.classList.add('is-active');requestAnimationFrame(()=>$('#taskWidthInput').focus());return;}$('#taskWidthInput').value=button.dataset.w;$('#taskHeightInput').value=button.dataset.h;updateSizePresetState();}));
+      $('#taskWidthInput').addEventListener('input',updateSizePresetState);$('#taskHeightInput').addEventListener('input',updateSizePresetState);
+      $('#boardNoteClose').addEventListener('click',hideBoardNote);$('#boardNoteEdit').addEventListener('click',()=>{const id=boardNoteTaskId;hideBoardNote();if(id)openTaskDialog(id);});document.addEventListener('pointerdown',e=>{const popover=$('#boardNotePopover');if(!popover.hidden&&!popover.contains(e.target)&&!e.target.closest('.board-task-note-preview'))hideBoardNote();});document.addEventListener('keydown',e=>{if(e.key==='Escape')hideBoardNote();});
+      $('#taskSearch').addEventListener('input',renderTaskList);$$('.filter-chip').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;$$('.filter-chip').forEach(item=>item.classList.toggle('is-active',item===button));renderTaskList();}));
+      $('#clearHistoryButton').addEventListener('click',clearHistory);
+      $('#cancelSelectionButton').addEventListener('click',()=>{selectedTaskId=null;renderAll();});$('#miniBoardButton').addEventListener('click',toggleMiniBoard);$('#compactButton').addEventListener('click',compactBoard);$('#clearBoardButton').addEventListener('click',clearBoard);
+      $$('#boardPresets .preset').forEach(button=>button.addEventListener('click',()=>resizeBoard(Number(button.dataset.rows),Number(button.dataset.cols))));
+      $('#applyBoardSizeButton').addEventListener('click',()=>resizeBoard(clampInt($('#boardRows').value,3,16,0),clampInt($('#boardCols').value,3,16,0)));
+      $('#outputFilename').addEventListener('blur',normalizedFilenameBase);$('#exportButton').addEventListener('click',exportBackup);$('#importButton').addEventListener('click',()=>$('#importFile').click());$('#importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(file)await importBackup(file);e.target.value='';});$('#resetButton').addEventListener('click',resetAll);
+      $$('.mobile-nav-item').forEach(button=>button.addEventListener('click',()=>showMobilePage(button.dataset.page)));
+      window.addEventListener('resize',()=>{if(window.innerWidth>600){$$('.app-mobile-page').forEach(page=>page.classList.remove('is-mobile-active'));$('#tasksPage').classList.add('is-mobile-active');}else if(!$('.app-mobile-page.is-mobile-active'))showMobilePage('tasksPage');});
+
+      $('#versionBadge').textContent=`v${APP_CONFIG.version}`;$('#buildVersion').textContent=APP_CONFIG.version;$('#builtAt').textContent=(BUILD_MANIFEST.generatedAtUtc||'—').replace('T',' ').replace('Z',' UTC');
+      applyLanguage();
+    })();
+  </script>
+</body>
+</html>
