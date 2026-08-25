@@ -3,7 +3,7 @@
   "name": "Task Packing",
   "nameJa": "Task Packing",
   "slug": "task-packing",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A finite-capacity visual ToDo board with task sizing, priorities, completion history, and an optional always-on-top mini board.",
   "descriptionJa": "タスクの大きさと重要度を決めて有限のボードへ配置し、完了履歴やミニボードでも進捗を扱えるローカル完結ToDoアプリです。",
   "defaultLanguage": "auto",

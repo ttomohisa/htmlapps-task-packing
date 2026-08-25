@@ -21,16 +21,16 @@ GitHub Pages only serves the initial HTML. Task data, board placement, completio
 
 ## Features
 
-- **Keep a normal task list** — Tasks remain in the list whether they are placed on the board or not.
+- **Keep a normal task list** — Tasks remain in the list whether they are placed on the board or not. Switch between information-rich cards and compact one-line rows; your preferred view is remembered locally.
 - **Make workload visible as area** — Choose XS/S/M/L/XL or define a custom width and height from 1×1 to 8×8.
 - **Work inside finite capacity** — Start with a 5×5 board, switch to 4×4 / 7×7 / 9×9, or set custom rows and columns from 3 to 16.
 - **Prevent impossible plans** — Tasks cannot overlap or extend outside the board. Free cells and the largest contiguous free rectangle are shown separately.
 - **Rearrange directly** — Drag tasks within the board, reorder the task list, move a board task back to the list, or drag between active tasks and completion history on desktop.
-- **Use a touch-friendly placement flow** — On mobile, choose **Place** and then tap the target cell instead of relying on drag-and-drop.
+- **Place multiple tasks on mobile** — Select several unplaced tasks and add them together only after the app verifies that the whole selection can fit.
 - **Highlight important work** — Mark a task as Important to give it a distinct warm color on the board.
 - **Complete from the board** — Every placed task has a visible completion control. Completion can be undone immediately from the toast.
-- **Keep completion history separate** — Restore completed tasks, delete individual history entries, or clear the full history after confirmation.
-- **Read task notes on the board** — Notes appear inside sufficiently large task blocks and can be opened for a fuller view.
+- **Keep completion history separate** — Restore completed tasks, delete individual history entries, or clear the full history after confirmation. On desktop the history panel starts collapsed, and the task list can also be collapsed when you want more visual focus.
+- **Open details explicitly** — Use the **Details** action in the task list or completion history, or tap/click a board task. Tiny 1×1 blocks still open the same readable detail view, including elapsed days since the task was added.
 - **Compact the board** — Repack placed tasks deterministically to recover larger contiguous free space.
 - **Open an always-on-top Mini board** — On supported Chromium browsers, Document Picture-in-Picture provides a compact board with completion and latest-completion Undo.
 - **Stay local** — Data is stored in browser localStorage, JSON backup/restore is explicit, and runtime network access is blocked by CSP.
@@ -52,15 +52,25 @@ The core app does not require a local web server. The optional **Mini board** de
 
 ## Usage
 
-1. Add a task from the task list.
+1. Add a task from the task list. Use the card/row toggle beside the filters when you want either richer context or a denser one-line overview.
 2. Choose its size. Use XS–XL for quick sizing, or choose **Other** to reveal custom width/height fields.
 3. Optionally mark the task as **Important** and add a note.
-4. Keep the task unplaced until you are ready, or choose **Place** and select an empty board position.
-5. On desktop, drag placed tasks to rearrange them. Drag a placed task back to the task list to unplace it.
-6. Complete a task from the task list or directly from its board block. Use the toast to Undo accidental completion.
-7. Review completed work in **Completion history**. Restore entries to the task list, delete one entry, or use **Clear all** when you no longer need the history.
-8. Resize the board whenever your planning horizon changes. Tasks that no longer fit are preserved and returned to the unplaced list.
-9. Save a JSON backup from **Board & data** when you want a portable copy of your local state.
+4. On desktop, drag an unplaced task onto the board. The **Place** action can also auto-place a single task into the first suitable free area.
+5. On mobile, use **Place multiple** to select several unplaced tasks. The app simulates the whole selection first and commits only when every selected task can be placed.
+6. Moving a board task is drag-only. Tap or click a task block to open its details. In the task list, use the explicit **Details** action instead of clicking the whole card. On desktop, drag a placed task back to the task list to unplace it.
+7. Complete a task from the task list or directly from its board block. Use the toast to Undo accidental completion.
+8. Review completed work in **Completion history**. On desktop, this panel starts collapsed. Restore entries to the task list, delete one entry, or use **Clear all** when you no longer need the history.
+9. Resize the board whenever your planning horizon changes. Tasks that no longer fit are preserved and returned to the unplaced list.
+10. Save a JSON backup from **Board & data** when you want a portable copy of your local state.
+
+### Task list views
+
+Task Packing v1.0.1 provides two views for the same active task list:
+
+- **Cards** show the mini size grid, note preview, status badges, and labeled actions. Use this when you want more context while planning.
+- **Rows** keep each task to one compact line and use icon actions for higher information density. Use this when you have many tasks to scan or reorder quickly.
+
+Both views use the same task order and support drag reordering. Switching views does not change task data or JSON backup schema; the selected view is stored only as a local UI preference.
 
 ### Task size is capacity, not time
 
@@ -76,6 +86,7 @@ Completion history is independent from the active task list. Completing a task r
 
 - Undo immediately from the completion toast.
 - Drag a history entry back to the task list on desktop.
+- Use **Details** to review its size, Important state, completion time, and note.
 - Use **Restore to tasks** to bring it back as an unplaced task.
 - Delete one history entry with Undo.
 - Use **Clear all** to permanently delete all completion history after confirmation.
@@ -160,7 +171,7 @@ GitHub Pages naturally requires the initial HTML request. After the app has load
 ## Browser support and limitations
 
 - Core task, board, history, backup, and language features target current Chromium, Firefox, and Safari releases.
-- Desktop drag-and-drop is intended for pointer-based desktop use. Mobile uses the explicit **Place → tap** flow instead.
+- Board tasks support both mouse and touch: click/tap opens details, while dragging moves the block. Touch movement uses Pointer Events with a Touch Events fallback; multi-task placement is handled through the dedicated mobile selection flow.
 - Document Picture-in-Picture is not available in every browser; Mini board is therefore an optional enhancement.
 - localStorage can be removed when browser/site data is cleared. Export JSON backups for data you need to keep.
 - Very large task lists remain local to the browser; this app is intentionally a personal planning tool rather than a team/project database.

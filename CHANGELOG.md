@@ -1,27 +1,25 @@
 # Changelog
 
-## 1.0.0 - 2026-08-25
-- Added a Complete action to every task card in the active task list, with the same completion-history and toast Undo behavior as the board.
-- Prevent task cards in the task list from stretching to fill unused vertical space; restore proportional mini size grids and simplify board notes.
-- Fixed board-internal drag-and-drop regression; moving a placed block now preserves the grabbed cell and allows self-overlapping moves.
-- Improved capacity-board readability with larger task titles, completion controls, note controls, and inline note previews on larger blocks.
-- Normalized task-list visuals so task size no longer changes the size glyph or card layout; size is shown inside a fixed preview frame and badges.
+## 1.0.1 - 2026-08-26
+- Added a compact single-row task-list view alongside the existing card view, with the preferred view stored locally.
+- Added an explicit Complete action to task-list entries and explicit Details actions to both active tasks and completion-history entries.
+- Changed capacity-board interaction to a clearer model: tap/click opens task details, while movement is drag-only; a short interaction hint is shown above the board.
+- Added collapsible desktop task-list and completion-history panels. The task list starts open and completion history starts closed.
+- Added atomic mobile multi-task placement: selected unplaced tasks are simulated first and are placed only when the entire selection fits.
+- Hardened board drag-and-drop across mobile and desktop layouts, including Pointer Events, Touch Events fallback, pointer-capture loss, and responsive layout switching.
+- Improved action icons for place, remove, and complete so the task list matches the board interaction language more closely.
+- Added elapsed days to active-task details while keeping completion-history details focused on completion time.
+- Removed decorative note treatment from task details and removed Browser Kitty branding from the footer.
+- Fixed persistence after unplacing and deleting tasks, and removed a duplicate heading ID found during release checks.
+- Refreshed Japanese/English screenshots, README documentation, release metadata, and standalone artifacts for v1.0.1.
 
-- Initial Task Packing implementation.
-- Added independent task list and finite capacity board.
-- Changed the default board to 5×5 and presets to 4×4 / 5×5 / 7×7 / 9×9.
-- Added variable task sizing, collision/overflow prevention, drag-and-drop, and touch placement.
-- Added Important tasks with distinct board coloring.
-- Added in-board completion controls with toast Undo.
-- Added a separate completion history with restore action.
-- Added an optional always-on-top Mini board using Document Picture-in-Picture.
-- Added capacity metrics and largest-free-rectangle analysis.
-- Added local persistence and JSON backup/restore including history and importance.
-- Added responsive four-tab mobile navigation and bilingual UI.
-- Added task-list drag reordering and drag transfer between active tasks and completion history.
-- Added board → task-list drag unplacement and improved placed-task dragging when the valid destination overlaps the task's current footprint.
-- Added compact note popovers on board blocks.
-- Added per-history-entry deletion with Undo.
-- Added icons to list actions and custom size fields behind an Other choice.
-- Added Mini board in-window Undo for accidental completions.
-- Renamed Japanese UI terminology from 盤面 to ボード.
+## 1.0.0 - 2026-08-26
+- Initial Task Packing release with an independent task list and finite capacity board.
+- Default 5×5 board with 4×4 / 5×5 / 7×7 / 9×9 presets and custom 3–16 row/column sizes.
+- Variable task sizing, Important tasks, notes, capacity metrics, largest-free-rectangle analysis, and deterministic compact/repack.
+- Drag placement and movement on desktop, task-list reordering, board → list unplacement, and active ↔ completion-history workflows.
+- Task-list and in-board completion controls with toast Undo.
+- Separate completion history with restore, per-entry delete + Undo, and confirmation-based Clear all.
+- Optional always-on-top Mini board using Document Picture-in-Picture, including completion and latest-completion Undo.
+- Local persistence and schema version 1 JSON backup/restore.
+- Responsive mobile navigation, Japanese/English UI, single-HTML distribution, and runtime network blocking.
