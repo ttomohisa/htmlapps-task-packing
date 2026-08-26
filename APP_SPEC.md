@@ -21,8 +21,9 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 6. Complete a placed task directly from its board block.
 7. Undo a completion from the toast, or later restore it from Completion history. Mini board also exposes its own latest-completion Undo.
 8. Resize the board using presets or independent rows/columns from 3 to 16.
-9. On supported browsers, open Mini board for an always-on-top board view.
-10. Save or restore a JSON backup when needed.
+9. Save the current capacity board as a clean PNG snapshot when needed.
+10. On supported browsers, open Mini board for an always-on-top board view with note previews where space allows.
+11. Save or restore a JSON backup when needed; optionally copy a URL backup for a small data set.
 
 ## 4. Functional requirements
 
@@ -44,12 +45,15 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Resizing smaller keeps all tasks; placements that no longer fit become unplaced.
 - Show occupied percentage, used/total cells, free cells, unplaced tasks, and largest free rectangle.
 - Provide deterministic first-fit-decreasing compact/repack.
-- Mini board uses Document Picture-in-Picture when available, permits completion from the PiP window, and exposes Undo for the latest completion made there.
-- If Document Picture-in-Picture is unavailable, show a clear non-destructive message and keep normal board behavior.
+- Export the current capacity board as a PNG using only local Canvas APIs. The image preserves board dimensions, task geometry, Important coloring, task titles, note previews where space allows, and capacity usage while omitting interactive controls.
+- Mini board uses Document Picture-in-Picture when available, shows note previews when tile space allows, permits completion from the PiP window, and exposes Undo for the latest completion made there.
+- If Document Picture-in-Picture is unavailable, hide the Mini board control entirely and keep normal board behavior unchanged.
 - Reversible actions use the reusable toast + Undo pattern where practical.
-- Task deletion and full reset use the reusable confirmation dialog.
+- Built-in sample tasks are explicitly tagged. While any remain, a dismiss-on-cleanup banner appears at the top of the task list with **Clear sample data**; it removes only sample tasks/history and offers toast Undo. Editing a sample task converts it into normal user data.
+- Task deletion and full reset use the reusable confirmation dialog. Full reset explicitly warns that sample data will be recreated.
 - Persist active tasks, history, importance, board settings, and placements in localStorage when available.
-- Export/import a JSON backup using schema version 1.
+- Export/import a JSON backup using schema version 1. JSON remains the primary portable backup.
+- Optionally gzip-compress the same schema-version-1 state with the browser-native CompressionStream API, Base64URL-encode the compressed bytes, and store them in the URL fragment for small transfers. URL backup must be presented as secondary, must warn that compression is not encryption, and must confirm before restoring over local state.
 - Switch Japanese and English without reload.
 - Runtime network access is blocked.
 
@@ -58,6 +62,7 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - All task data, completion history, and layout state remain in browser memory/localStorage.
 - No login, analytics, telemetry, server storage, or runtime API request.
 - JSON download/upload occurs only from explicit user action.
+- URL backup is also explicit-only, keeps its gzip-compressed payload in the URL fragment, and must be treated as encoded—not encrypted—data.
 
 ## 6. Non-goals
 
@@ -97,6 +102,7 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - Task list supports two presentation modes: the default information-rich card view and a compact single-row view. The choice is stored as a local UI preference and does not change backup schema version 1.
 - Important state persists and changes board-block color.
 - Clicking/tapping any board task opens a readable detail view with size, Important state, placement state, elapsed days, note text, Edit, Complete, and Remove actions. The detail view does not add a decorative note icon. Task-list cards do not open details when the card body is clicked; their explicit Details action does.
+- Board tiles preview note text whenever the rendered tile has enough vertical space; the preview automatically hides or clamps to fit and never replaces the full detail view.
 - Custom width/height fields stay hidden until Other is selected.
 - Completing from the board removes the task, creates a history record, and offers Undo.
 - History is separate from the task list, provides per-entry Details, supports per-entry deletion, bulk clear with confirmation, and can restore tasks.
@@ -105,5 +111,7 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - Dragging active tasks to history completes them; dragging history back restores them.
 - Shrinking the board does not delete tasks.
 - Mobile can select multiple unplaced tasks and place the whole selection atomically. Capacity failure and shape/layout failure are reported without partial placement.
-- JSON backup restores active tasks, history, importance, sizes, board dimensions, and valid positions.
-- Mini board opens and syncs on supported browsers, while unsupported browsers fail gracefully.
+- Sample data can be cleared independently without touching user-created tasks or history; the clear button disappears afterward, Undo restores it, and Reset all recreates the samples.
+- JSON backup restores active tasks, history, importance, sizes, board dimensions, and valid positions. URL backup uses the same state shape and restore validation, gzip compression plus Base64URL encoding, and remains secondary and size-limited.
+- Board image export produces a downloadable PNG without network access or interactive controls.
+- Mini board opens and syncs on supported browsers, while the Mini board button is absent when unsupported.

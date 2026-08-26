@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2 - 2026-08-26
+- Board tiles now preview task notes when enough space is available, with the visible line count adapting to each rendered tile size.
+- Mini board tiles now show the same kind of space-aware note preview.
+- Added a prominent **Clear sample data** banner to the task list while built-in samples remain; edited/user-created tasks are preserved and cleanup supports Undo.
+- Reset-all confirmation now explicitly explains that the built-in sample data will be recreated.
+- Hide the Mini board button entirely when Document Picture-in-Picture is unavailable.
+- Added local PNG export for the current capacity board, preserving task geometry, Important colors, titles, note previews, and usage while omitting interactive controls.
+- Added an optional URL backup for small data sets while keeping JSON as the recommended primary backup. URL data is gzip-compressed, Base64URL-encoded, stored only in the fragment, and restored only after confirmation.
+- Board-to-board drag moves no longer show the placement toast; placement feedback is reserved for tasks newly added to the board.
+- Refreshed Japanese/English screenshots, README documentation, release metadata, and standalone artifacts for v1.0.2.
+
 ## 1.0.1 - 2026-08-26
 - Added a compact single-row task-list view alongside the existing card view, with the preferred view stored locally.
 - Added an explicit Complete action to task-list entries and explicit Details actions to both active tasks and completion-history entries.

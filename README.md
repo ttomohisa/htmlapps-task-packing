@@ -28,12 +28,14 @@ GitHub Pages only serves the initial HTML. Task data, board placement, completio
 - **Rearrange directly** — Drag tasks within the board, reorder the task list, move a board task back to the list, or drag between active tasks and completion history on desktop.
 - **Place multiple tasks on mobile** — Select several unplaced tasks and add them together only after the app verifies that the whole selection can fit.
 - **Highlight important work** — Mark a task as Important to give it a distinct warm color on the board.
+- **See notes without opening details** — When a board tile has enough room, its note is previewed directly inside the tile and automatically clamps to the available height.
 - **Complete from the board** — Every placed task has a visible completion control. Completion can be undone immediately from the toast.
 - **Keep completion history separate** — Restore completed tasks, delete individual history entries, or clear the full history after confirmation. On desktop the history panel starts collapsed, and the task list can also be collapsed when you want more visual focus.
 - **Open details explicitly** — Use the **Details** action in the task list or completion history, or tap/click a board task. Tiny 1×1 blocks still open the same readable detail view, including elapsed days since the task was added.
 - **Compact the board** — Repack placed tasks deterministically to recover larger contiguous free space.
-- **Open an always-on-top Mini board** — On supported Chromium browsers, Document Picture-in-Picture provides a compact board with completion and latest-completion Undo.
-- **Stay local** — Data is stored in browser localStorage, JSON backup/restore is explicit, and runtime network access is blocked by CSP.
+- **Save the current board as PNG** — Export a clean shareable image of the current capacity board, preserving task sizes, Important colors, titles, notes, and board usage without UI controls.
+- **Open an always-on-top Mini board when supported** — On browsers with Document Picture-in-Picture, a compact board shows titles and note previews where space allows, and provides completion plus latest-completion Undo. The button stays hidden when the API is unavailable.
+- **Stay local** — Data is stored in browser localStorage, JSON backup/restore is the primary portable backup, an optional URL backup is available for small data sets, and runtime network access is blocked by CSP.
 - **Use Japanese or English** — Switch the interface language without reloading.
 
 ## Quick start
@@ -61,11 +63,13 @@ The core app does not require a local web server. The optional **Mini board** de
 7. Complete a task from the task list or directly from its board block. Use the toast to Undo accidental completion.
 8. Review completed work in **Completion history**. On desktop, this panel starts collapsed. Restore entries to the task list, delete one entry, or use **Clear all** when you no longer need the history.
 9. Resize the board whenever your planning horizon changes. Tasks that no longer fit are preserved and returned to the unplaced list.
-10. Save a JSON backup from **Board & data** when you want a portable copy of your local state.
+10. While built-in examples remain, a **Clear sample data** banner appears at the top of the task list. Use it after you understand the flow; it removes only sample items, the banner then disappears, and the action can be undone from the toast.
+11. Use **Save image** in the board toolbar when you want a PNG snapshot of the current board without operation controls.
+12. Save a JSON backup from **Board & data** when you want a portable copy of your local state. For a small data set, **Copy URL** is available as a secondary convenience option. **Reset all** returns the app to its initial state, including the built-in sample data.
 
 ### Task list views
 
-Task Packing v1.0.1 provides two views for the same active task list:
+Task Packing provides two views for the same active task list:
 
 - **Cards** show the mini size grid, note preview, status badges, and labeled actions. Use this when you want more context while planning.
 - **Rows** keep each task to one compact line and use icon actions for higher information density. Use this when you have many tasks to scan or reorder quickly.
@@ -93,9 +97,13 @@ Completion history is independent from the active task list. Completing a task r
 
 ### Mini board
 
-**Mini board** uses the Document Picture-in-Picture API. When supported, it opens the capacity board in a small always-on-top window and lets you complete tasks without keeping the main tab visible. The Mini board also includes an Undo action for the latest task completed from that window.
+**Mini board** uses the Document Picture-in-Picture API. When supported, it opens the capacity board in a small always-on-top window, shows task notes when a tile has enough room, and lets you complete tasks without keeping the main tab visible. The Mini board also includes an Undo action for the latest task completed from that window.
 
-This is an optional enhancement. Browsers without Document Picture-in-Picture continue to support the normal board without losing functionality.
+This is an optional enhancement. When Document Picture-in-Picture is unavailable, the Mini board button is not shown; the normal board and all core functionality remain available.
+
+### URL backup (secondary)
+
+For small data sets, **Copy URL** serializes the same schema-version-1 backup state, compresses it with browser-native **gzip (`CompressionStream`)**, Base64URL-encodes the compressed bytes, and stores them in the URL fragment (`#...`). Opening that URL decompresses the fragment locally and asks before replacing the current local state. The fragment is not sent as part of the HTTP request, but compression is **not encryption**, so do not use it for sensitive task text. Long backups should use JSON instead.
 
 ## JSON backup format
 
@@ -161,7 +169,7 @@ The build generates the readable and self-extracting standalone HTML files in `d
 Task Packing is designed for local task data.
 
 - No account, analytics, telemetry, cloud sync, or server-side task storage.
-- Task data and completion history stay in browser memory/localStorage unless you explicitly export a JSON backup.
+- Task data and completion history stay in browser memory/localStorage unless you explicitly export JSON or create a URL backup. URL backup data is gzip-compressed and Base64URL-encoded in the fragment; it is not encrypted.
 - JSON restore reads only the file you choose.
 - The generated HTML includes a Content Security Policy with `connect-src 'none'`.
 - There are currently no third-party runtime dependencies.
@@ -173,7 +181,8 @@ GitHub Pages naturally requires the initial HTML request. After the app has load
 - Core task, board, history, backup, and language features target current Chromium, Firefox, and Safari releases.
 - Board tasks support both mouse and touch: click/tap opens details, while dragging moves the block. Touch movement uses Pointer Events with a Touch Events fallback; multi-task placement is handled through the dedicated mobile selection flow.
 - Document Picture-in-Picture is not available in every browser; Mini board is therefore an optional enhancement.
-- localStorage can be removed when browser/site data is cleared. Export JSON backups for data you need to keep.
+- URL backup requires the browser's `CompressionStream` / `DecompressionStream`; use JSON backup when those APIs are unavailable.
+- localStorage can be removed when browser/site data is cleared. Export JSON backups for data you need to keep; URL backup is intended only as a secondary option for small data sets.
 - Very large task lists remain local to the browser; this app is intentionally a personal planning tool rather than a team/project database.
 - Board cells represent subjective capacity, not a fixed duration or calendar slot.
 
