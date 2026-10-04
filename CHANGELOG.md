@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+- Added Duplicate to active-task and completion-history details, using the existing Add form and save Undo. Copies start unplaced with a fresh identity and preserve title, note, size, and Important.
+- Guarded the 500-record active/history limits for Add, Duplicate, Restore, Mini Undo, and Complete, preserving data instead of silently losing records after reload.
+- Made JSON/URL restoration transactional: reject malformed or duplicate-ID data, ignore stale reads, and clear stale dialogs/Undo after replacement.
+- Fixed Enter/Space on board completion controls and stale main-window Undo after Mini board Undo.
+- Fixed legacy sample detection so explicitly normal tasks, including sample copies, stay normal after reload, Undo, and JSON restore.
+- Added dependency-free task-flow regression tests and Japanese/English guidance.
+
 ## 1.0.2 - 2026-08-26
 - Board tiles now preview task notes when enough space is available, with the visible line count adapting to each rendered tile size.
 - Mini board tiles now show the same kind of space-aware note preview.
