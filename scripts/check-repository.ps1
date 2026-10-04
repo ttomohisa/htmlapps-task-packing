@@ -137,6 +137,9 @@ try {
   Remove-Item -Force -ErrorAction SilentlyContinue $tempVerifyPath
 }
 
+& node --test (Join-Path $Root "tests/task-duplicate.test.cjs")
+if ($LASTEXITCODE -ne 0) { throw "Task behavior tests failed." }
+
 $app = Get-Content -Raw -Encoding UTF8 (Join-Path $Root "app.config.json") | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace([string]$app.name)) { throw "app.config.json: name is required" }
 if ([string]::IsNullOrWhiteSpace([string]$app.slug)) { throw "app.config.json: slug is required" }

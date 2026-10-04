@@ -30,6 +30,9 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Task list is independent of board placement and retains all active tasks.
 - Completion history is separate from the active task list.
 - Each task has title, optional note, width (1–8), height (1–8), and Important boolean.
+- Active-task and completion-history details expose Duplicate. It closes details and opens the existing Add form with title, note, width, height, and Important prefilled, and the title selected. Saving creates a fresh ID and creation time, unplaced, with `sample: false`; source tasks/history remain unchanged. Cancel, close, and Escape create nothing. The ordinary save toast provides Undo.
+- New task creation (Add or Duplicate), history restoration, and Mini board Undo stop at 500 active tasks with a localized explanation and preserve source data; an Add draft stays open and editing remains available. Completion stops at 500 history entries without deleting the active task or older history.
+- JSON and URL restore validate schema-1 structure, task fields, collection limits, and unique IDs across active/history before replacing state. Invalid input preserves current data. Newer imports or state changes invalidate older pending results; a successful restore closes stale task dialogs and clears Mini board/toast Undo. Mini board Undo also dismisses stale main-window snapshot Undo.
 - Default board is 5×5.
 - Board presets: 4×4, 5×5, 7×7, 9×9 plus custom rows and columns from 3–16.
 - Placed tasks may not overlap or extend beyond board bounds.
@@ -49,7 +52,7 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Mini board uses Document Picture-in-Picture when available, shows note previews when tile space allows, permits completion from the PiP window, and exposes Undo for the latest completion made there.
 - If Document Picture-in-Picture is unavailable, hide the Mini board control entirely and keep normal board behavior unchanged.
 - Reversible actions use the reusable toast + Undo pattern where practical.
-- Built-in sample tasks are explicitly tagged. While any remain, a dismiss-on-cleanup banner appears at the top of the task list with **Clear sample data**; it removes only sample tasks/history and offers toast Undo. Editing a sample task converts it into normal user data.
+- Built-in sample tasks are explicitly tagged. While any remain, a dismiss-on-cleanup banner appears at the top of the task list with **Clear sample data**; it removes only sample tasks/history and offers toast Undo. Editing or duplicating a sample task produces normal user data. Legacy sample detection applies only to records whose sample flag is missing; an explicit false survives reload, Undo, and JSON restore.
 - Task deletion and full reset use the reusable confirmation dialog. Full reset explicitly warns that sample data will be recreated.
 - Persist active tasks, history, importance, board settings, and placements in localStorage when available.
 - Export/import a JSON backup using schema version 1. JSON remains the primary portable backup.
@@ -101,6 +104,10 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - Every active task stays visible in the task list whether placed or unplaced.
 - Task list supports two presentation modes: the default information-rich card view and a compact single-row view. The choice is stored as a local UI preference and does not change backup schema version 1.
 - Important state persists and changes board-block color.
+- Duplicating placed/unplaced/history tasks preserves editable fields, including custom 8×8 and Important, without sharing identity, placement, completion, or sample status. Repeated saves create independent copies; Undo removes the most recent copy.
+- Saving/restoring the 500th active task and completing the 500th history entry succeeds; attempts beyond either limit are rejected without mutation or silent loss on reload.
+- Enter/Space on a focused board tile opens Details; Enter/Space on its nested Complete button retains native button activation.
+- Normal tasks matching the built-in samples remain normal across sample clearing, reload, Undo, and JSON backup/restore.
 - Clicking/tapping any board task opens a readable detail view with size, Important state, placement state, elapsed days, note text, Edit, Complete, and Remove actions. The detail view does not add a decorative note icon. Task-list cards do not open details when the card body is clicked; their explicit Details action does.
 - Board tiles preview note text whenever the rendered tile has enough vertical space; the preview automatically hides or clamps to fit and never replaces the full detail view.
 - Custom width/height fields stay hidden until Other is selected.

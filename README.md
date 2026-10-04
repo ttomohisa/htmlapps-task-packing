@@ -38,6 +38,14 @@ GitHub Pages only serves the initial HTML. Task data, board placement, completio
 - **Stay local** — Data is stored in browser localStorage, JSON backup/restore is the primary portable backup, an optional URL backup is available for small data sets, and runtime network access is blocked by CSP.
 - **Use Japanese or English** — Switch the interface language without reloading.
 
+### Duplicate a task
+
+Open details from the task list, board, or completion history, then choose **Duplicate**. Review the prefilled title, note, size, and Important flag in the Add form, edit as needed, and save. The copy is a new unplaced task with a fresh creation time; the original and completion history stay unchanged. Copies of sample tasks are normal tasks and survive **Clear sample data**.
+
+Cancel, close, or Escape creates nothing. Immediately after saving, use **Undo** to remove the copy. Active tasks are limited to 500; at the limit, the form keeps your draft and explains that you must complete or delete an existing task before saving.
+
+Completion history is also limited to 500 entries. Complete, Restore, and Mini board Undo stop at capacity without evicting existing data. JSON/URL restore rejects malformed, duplicate-ID, or over-limit backups and preserves the current data. Late reads cannot overwrite a newer import or edit.
+
 ## Quick start
 
 ### Use the web demo
@@ -201,3 +209,7 @@ Bug reports and feature proposals are welcome through GitHub Issues. See [CONTRI
 Copyright © 2026 ttomohisa
 
 Licensed under the [MIT License](LICENSE).
+
+### Regression tests
+
+Run `node --test` with Node.js 20 or newer. `scripts/check-repository.ps1` runs the same dependency-free behavior tests before building and verifying both HTML variants. The test DOM adapter does not model native dialog, layout, or focus behavior; browser verification is still required.
