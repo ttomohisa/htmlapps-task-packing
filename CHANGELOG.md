@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Added a session-only Important-only task-list filter that combines with placement status and title/note search in Japanese/English, without altering task order, board data, or complete backups.
+- Fixed Reset all leaving a stale status-filter highlight; filter buttons now render their active and pressed states from current filter state.
+- Fixed Mini board completion Undo appending tasks out of order. It now restores the original list index while retaining intervening edits and placement/capacity protection.
 - Added Duplicate to active-task and completion-history details, using the existing Add form and save Undo. Copies start unplaced with a fresh identity and preserve title, note, size, and Important.
 - Guarded the 500-record active/history limits for Add, Duplicate, Restore, Mini Undo, and Complete, preserving data instead of silently losing records after reload.
 - Made JSON/URL restoration transactional: reject malformed or duplicate-ID data, ignore stale reads, and clear stale dialogs/Undo after replacement.
