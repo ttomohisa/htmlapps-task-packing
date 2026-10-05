@@ -84,6 +84,10 @@ Task Packing provides two views for the same active task list:
 
 Both views use the same task order and support drag reordering. Switching views does not change task data or JSON backup schema; the selected view is stored only as a local UI preference.
 
+### Focus on important tasks
+
+Combine Important only with All, Unplaced, or Placed and title/note search. Filters affect only the list, leaving the board, task order, and complete JSON backups unchanged. Important-only and placement filters reset on reload; Reset all also clears search. Click Important only again to include ordinary tasks. Hidden tasks selected for mobile bulk placement stay selected; the selection count still includes them.
+
 ### Task size is capacity, not time
 
 Task Packing intentionally does not define one cell as a fixed number of minutes. A small but mentally heavy task can be large; a long but routine task can be small. The board represents the amount of capacity you are willing to commit, not a calendar schedule.
@@ -188,7 +192,9 @@ GitHub Pages naturally requires the initial HTML request. After the app has load
 
 - Core task, board, history, backup, and language features target current Chromium, Firefox, and Safari releases.
 - Board tasks support both mouse and touch: click/tap opens details, while dragging moves the block. Touch movement uses Pointer Events with a Touch Events fallback; multi-task placement is handled through the dedicated mobile selection flow.
-- Document Picture-in-Picture is not available in every browser; Mini board is therefore an optional enhancement.
+- Mini Undo returns the completed task to its previous list index without rolling back later edits to other tasks. If its old board position is occupied or outside the resized board, it returns unplaced.
+
+Document Picture-in-Picture is not available in every browser; Mini board is therefore an optional enhancement.
 - URL backup requires the browser's `CompressionStream` / `DecompressionStream`; use JSON backup when those APIs are unavailable.
 - localStorage can be removed when browser/site data is cleared. Export JSON backups for data you need to keep; URL backup is intended only as a secondary option for small data sets.
 - Very large task lists remain local to the browser; this app is intentionally a personal planning tool rather than a team/project database.

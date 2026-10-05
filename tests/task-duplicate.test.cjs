@@ -10,11 +10,16 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const task = (overrides = {}) => ({ id: 'original', title: '週次レビュー', note: 'Review <draft> & next steps\n確認', w: 2, h: 1, row: 0, col: 0, important: true, sample: false, createdAt: 1000, ...overrides });
 const saved = (tasks = [task()], history = []) => ({ version: 1, board: { rows: 9, cols: 9 }, tasks, history });
 
-function boot(input = saved(), language = 'en') {
+function boot(input = saved(), language = 'en', { lists = false, mobile = false } = {}) {
   const nodes = new Map(), all = [];
   let stored = JSON.stringify(input), nextId = 0, now = 100000, toast = null;
   class Element {
-    constructor() { this.value = ''; this.checked = false; this.hidden = false; this.open = false; this.dataset = {}; this.style = {}; this.listeners = {}; this.textContent = ''; this.selectionStart = 0; this.selectionEnd = 0; const classes = new Set(); this.classList = { toggle: (key, on) => on ? classes.add(key) : classes.delete(key), add: (...keys) => keys.forEach(key => classes.add(key)), remove: (...keys) => keys.forEach(key => classes.delete(key)), contains: key => classes.has(key) }; }
+    constructor() { this.children = []; this.attributes = {}; this.className = ''; this.value = ''; this.checked = false; this.hidden = false; this.open = false; this.dataset = {}; this.style = { setProperty(key, value) { this[key] = value; } }; this.listeners = {}; this.textContent = ''; this.selectionStart = 0; this.selectionEnd = 0; const classes = new Set(); this.classList = { toggle: (key, on) => on ? classes.add(key) : classes.delete(key), add: (...keys) => keys.forEach(key => classes.add(key)), remove: (...keys) => keys.forEach(key => classes.delete(key)), contains: key => classes.has(key) }; }
+    querySelector(selector) { assert.ok(selector.startsWith('.') && this.innerHTML?.includes(selector.slice(1)), `Missing child ${selector}`); return new Element(); }
+    setAttribute(key, value) { this.attributes[key] = String(value); }
+    getAttribute(key) { return this.attributes[key]; }
+    replaceChildren() { this.children = []; }
+    append(child) { this.children.push(child); }
     addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
     dispatch(type, extra = {}) { const event = { target: this, currentTarget: this, preventDefault() { this.defaultPrevented = true; }, ...extra }; for (const fn of this.listeners[type] || []) fn(event); if (type === 'cancel' && !event.defaultPrevented) this.close(); }
     showModal() { assert.equal(nodes.get('taskDialog')?.open || nodes.get('taskDetailDialog')?.open, false, 'Only one task dialog may be open'); this.open = true; }
@@ -25,23 +30,30 @@ function boot(input = saved(), language = 'en') {
   }
   for (const match of html.matchAll(/<[^!\/][^>]*>/g)) {
     const tag = match[0], el = new Element();
+    const className = tag.match(/\bclass="([^"]+)"/); if (className) { el.className = className[1]; el.classList.add(...className[1].split(/\s+/)); }
+    for (const attr of tag.matchAll(/(aria-[\w-]+)="([^"]+)"/g)) el.setAttribute(attr[1], attr[2]);
     const id = tag.match(/\bid="([^"]+)"/); if (id) nodes.set(id[1], el);
     for (const attr of tag.matchAll(/data-([\w-]+)="([^"]+)"/g)) el.dataset[attr[1].replace(/-([a-z])/g, (_, char) => char.toUpperCase())] = attr[2];
     if (/\bhidden(?:\s|>)/.test(tag)) el.hidden = true;
     all.push(el);
   }
-  const document = { activeElement: null };
+  const document = { activeElement: null, body: new Element(), documentElement: {}, createElement: () => new Element(), querySelectorAll: selector => $$(selector) };
   const $ = selector => { const el = selector === '#sizePresets .size-preset[data-custom]' ? all.find(el => el.dataset.custom) : nodes.get(selector.slice(1)); assert.ok(el, `Missing DOM node ${selector}`); return el; };
-  const $$ = selector => all.filter(el => selector.includes('.size-preset') && (selector.includes('[data-w]') ? el.dataset.w : selector.includes('[data-custom]') ? el.dataset.custom : el.dataset.w || el.dataset.custom));
-  const context = vm.createContext({ $, $$, document, Date: class extends Date { static now() { return ++now; } }, crypto: { randomUUID: () => `copy-${++nextId}` }, requestAnimationFrame: fn => fn(), window: { matchMedia: () => ({ matches: false }) }, localStorage: { getItem: () => stored, setItem: (_, value) => { stored = value; } }, AppConfirm: { ask: async () => true }, showToast: (message, options = {}) => { toast = { message, ...options }; }, renderAll() {}, renderMiniBoard() {}, resetDragState() {}, setBulkMode() {}, AppToast: { dismiss() { toast=null; } }, location: { hash: '' }, clearBackupHash() {}, supportsCompressedUrlBackup: () => true, decodeBackupPayload: async () => ({}), console });
-  const functions = ['t','readStorage','writeStorage','sampleBlueprintIndex','migrateLegacySamples','normalizeState','clampInt','saveState','snapshot','restoreSnapshot','uid','isPlaced','getTask','area','occupancy','canPlace','sanitizePlacements','getDetailTask','openTaskDetail','closeTaskDetail','renderTaskDetail','escapeHtml','isPresetSize','setCustomSizeVisible','openTaskDialog','closeTaskDialog','updateSizePresetState','submitTask','completeTask','restoreCompletedTask','hasSampleData','clearSampleData','backupData','importBackup','duplicateTask','undoMiniCompletion','validateBackup','applyBackupState','restoreBackupFromUrl'];
+  const $$ = selector => all.filter(el => { if (selector.includes('.size-preset')) return selector.includes('[data-w]') ? el.dataset.w : selector.includes('[data-custom]') ? el.dataset.custom : el.dataset.w || el.dataset.custom; if (selector.startsWith('.filter-chip')) return el.classList.contains('filter-chip') && (!selector.includes('[data-filter]') || el.dataset.filter); if (selector === '.task-view-button') return el.classList.contains('task-view-button'); const attr = selector.match(/^\[data-([\w-]+)\]$/); return attr ? el.dataset[attr[1].replace(/-([a-z])/g, (_, char) => char.toUpperCase())] !== undefined : false; });
+  const context = vm.createContext({ $, $$, document, Date: class extends Date { static now() { return ++now; } }, crypto: { randomUUID: () => `copy-${++nextId}` }, requestAnimationFrame: fn => fn(), window: { matchMedia: () => ({ matches: mobile }) }, localStorage: { getItem: key => key === 'task-packing:state-v1' ? stored : null, setItem: (key, value) => { if (key === 'task-packing:state-v1') stored = value; } }, AppConfirm: { ask: async () => true }, showToast: (message, options = {}) => { toast = { message, ...options }; }, APP_CONFIG: { name: 'Task Packing', nameJa: 'Task Packing' }, renderAll() {}, renderTaskList() {}, renderMiniBoard() {}, renderMiniBoardButton() {}, renderHistory() {}, renderBoard() {}, renderSettings() {}, renderPanelCollapse() {}, renderBulkControls() {}, endDrag() {}, detectLanguage: () => language, resetDragState() {}, setBulkMode() {}, AppToast: { dismiss() { toast=null; } }, location: { hash: '' }, clearBackupHash() {}, supportsCompressedUrlBackup: () => true, decodeBackupPayload: async () => ({}), console });
+  const functions = ['t','readStorage','writeStorage','sampleBlueprintIndex','migrateLegacySamples','normalizeState','clampInt','saveState','snapshot','restoreSnapshot','uid','isPlaced','getTask','area','occupancy','canPlace','sanitizePlacements','getDetailTask','openTaskDetail','closeTaskDetail','renderTaskDetail','escapeHtml','isPresetSize','setCustomSizeVisible','openTaskDialog','closeTaskDialog','updateSizePresetState','submitTask','completeTask','restoreCompletedTask','hasSampleData','clearSampleData','backupData','importBackup','duplicateTask','undoMiniCompletion','validateBackup','applyBackupState','restoreBackupFromUrl','resetAll','reorderTask','moveTaskToEnd'];
+  if (lists) functions.push('renderBoard','largestFreeRectangle','renderTaskList','renderTaskFilters','renderAll','renderBulkControls','setBulkMode','toggleBulkTask','setTaskViewMode','applyLanguage');
   const lines = html.split('\n');
-  const source = functions.map(name => lines.find(line => new RegExp(`^      (?:async )?function ${name}\\(`).test(line)) || '').join('\n');
+  const source = functions.map(name => { const start = lines.findIndex(line => new RegExp(`^      (?:async )?function ${name}\\(`).test(line)); if (start < 0) return ''; let end = start + 1; if (name === 'renderTaskList' || name === 'renderBoard') while (end < lines.length && !/^      (?:async )?function /.test(lines[end])) end++; return lines.slice(start, end).join('\n'); }).join('\n');
   const translations = html.slice(html.indexOf('const translations='), html.indexOf('const $='));
-  vm.runInContext(`${translations}\nlet language=${JSON.stringify(language)},state=${JSON.stringify(input)},editingTaskId=null,detailTaskId=null,detailSource='task',detailOpenedAt=0,lastMiniCompletedId=null,lastMiniCompletedTask=null,bulkSelectedIds=new Set(),backupRestoreGeneration=0;const storageKey='task-packing:state-v1';\n${source}\nstate=normalizeState(state);`, context);
+  vm.runInContext(`${translations}\nlet language=${JSON.stringify(language)},state=${JSON.stringify(input)},editingTaskId=null,detailTaskId=null,detailSource='task',detailOpenedAt=0,lastMiniCompletedId=null,lastMiniCompletedTask=null,bulkSelectedIds=new Set(),backupRestoreGeneration=0;const storageKey='task-packing:state-v1',languageKey='task-packing:language',taskViewKey='task-packing:task-list-view';\n${lines.find(line => line.startsWith('      const initialState='))}\n${source}\n${lines.filter(line => /^      let (?:filter|importantOnly|taskViewMode|bulkMode|lastMiniCompletedIndex)=/.test(line)).join('\n')}\nstate=normalizeState(state);`, context);
   for (const line of lines.filter(line => line.trimStart().startsWith("$('#addTaskButton').addEventListener") || line.trimStart().startsWith("$('#taskForm').addEventListener") || line.trimStart().startsWith("$('#taskDetailClose').addEventListener") || line.trimStart().startsWith("$('#taskDetailDuplicate').addEventListener") || line.trimStart().startsWith("$('#taskDialog').addEventListener"))) vm.runInContext(line, context);
   const run = code => vm.runInContext(code, context);
-  return { el: id => nodes.get(id), document, run, state: () => plain(run('state')), stored: () => JSON.parse(stored), toast: () => toast,
+  if (lists) {
+    for (const line of lines.filter(line => line.trimStart().startsWith("$('#taskSearch').addEventListener") || line.trimStart().startsWith("$('#importantFilterButton').addEventListener"))) run(line);
+    run('renderAll()');
+  }
+  return { el: id => nodes.get(id), document, run, chips: () => all.filter(el => el.dataset.filter), visible: () => nodes.get('taskList').children.filter(el => el.dataset.taskId).map(el => el.dataset.taskId), state: () => plain(run('state')), stored: () => JSON.parse(stored), toast: () => toast,
     duplicate(id = 'original', source = 'task') { run(`openTaskDetail(${JSON.stringify(id)},${JSON.stringify(source)})`); const button = nodes.get('taskDetailDuplicate'); assert.ok(button, 'Details must contain a Duplicate button'); button.dispatch('click'); },
     submit() { nodes.get('taskForm').dispatch('submit'); }, undo() { assert.equal(typeof toast?.onAction, 'function'); toast.onAction(); },
   };
@@ -177,3 +189,155 @@ test('pending URL confirmation cannot overwrite a newer JSON import',async()=>{c
 for(const fields of [{sample:'false'},{important:'false'},{createdAt:'Infinity'},{createdAt:Infinity},{createdAt:-1},{createdAt:8640000000000001},{row:'0'},{col:{}},{row:1.5},{completedAt:'yesterday'}])test(`malformed field types cannot replace data: ${JSON.stringify(fields)}`,async()=>{const app=boot();const before=app.state(),stored=app.stored();await importData(app,backup(saved([task(fields)])));assert.deepEqual(app.state(),before);assert.deepEqual(app.stored(),stored);assert.equal(app.toast().message,'This backup cannot be loaded');});
 
 test('legacy optional flags and timestamps may be missing without changing the schema',async()=>{const app=boot();const item={id:'legacy',title:'Legacy',w:1,h:1};await importData(app,backup(saved([item])));assert.equal(app.toast().message,'Backup restored');const restored=app.state().tasks[0];assert.equal(restored.id,'legacy');assert.equal(restored.sample,false);assert.equal(restored.important,false);assert.ok(Number.isFinite(restored.createdAt));assert.equal(restored.row,null);});
+
+const filterFixture = () => saved([
+  task({ id: 'a', title: 'ALPHA task', note: 'first', row: 0, col: 0 }),
+  task({ id: 'b', title: 'ordinary', note: 'alpha note', row: null, col: null, important: false }),
+  task({ id: 'c', title: 'other', note: 'ALPHA note', row: null, col: null }),
+  task({ id: 'd', title: 'alpha ordinary', note: '', row: 3, col: 0, important: false }),
+  task({ id: 'e', title: '確認', note: '日本語メモ', row: 5, col: 0 }),
+]);
+function toggleImportant(app) { const button = app.el('importantFilterButton'); assert.ok(button, 'Task filters include an independent Important only button'); button.dispatch('click'); }
+function chooseStatus(app, status) { const chip = app.chips().find(button => button.dataset.filter === status); assert.ok(chip); chip.dispatch('click'); }
+function searchTasks(app, query) { app.el('taskSearch').value = query; app.el('taskSearch').dispatch('input'); }
+
+for (const language of ['ja', 'en']) for (const view of ['card', 'row']) for (const status of ['all', 'unplaced', 'placed']) {
+  test(`Important filter intersects ${status} and title/note search in ${language} ${view} view`, () => {
+    const input = filterFixture(), app = boot(input, language, { lists: true });
+    app.run(`setTaskViewMode('${view}')`); chooseStatus(app, status); toggleImportant(app);
+    assert.equal(app.run('filter'), status); assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'), 'true');
+    const eligible = input.tasks.filter(item => item.important && (status === 'all' || (status === 'placed') === Number.isInteger(item.row)));
+    assert.deepEqual(app.visible(), eligible.map(item => item.id));
+    for (const query of ['  alpha  ', 'FIRST', '日本語メモ', 'nothing matches']) {
+      searchTasks(app, query);
+      assert.deepEqual(app.visible(), eligible.filter(item => `${item.title} ${item.note}`.toLocaleLowerCase(language).includes(query.trim().toLocaleLowerCase(language))).map(item => item.id));
+    }
+    searchTasks(app, ''); toggleImportant(app);
+    assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'), 'false');
+    assert.deepEqual(app.visible(), input.tasks.filter(item => status === 'all' || (status === 'placed') === Number.isInteger(item.row)).map(item => item.id));
+    assert.equal(app.el('taskList').classList.contains('is-row-view'), view === 'row');
+    assert.deepEqual(app.state(), input); assert.deepEqual(app.stored(), input); assert.deepEqual(plain(app.run('backupData().state')), input);
+  });
+}
+
+for (const language of ['ja', 'en']) test(`Important filter labels, empty results, and language changes remain consistent (${language})`, () => {
+  const app = boot(filterFixture(), language, { lists: true }); toggleImportant(app); app.run('applyLanguage()');
+  assert.equal(app.el('importantFilterButton').textContent, language === 'ja' ? '重要のみ' : 'Important only');
+  searchTasks(app, 'no matches'); assert.equal(app.visible().length, 0); assert.match(app.el('taskList').children[0].innerHTML, new RegExp(app.run("t('noMatchesTitle')")));
+  app.run(`language='${language === 'ja' ? 'en' : 'ja'}';applyLanguage()`);
+  assert.equal(app.el('importantFilterButton').textContent, language === 'ja' ? 'Important only' : '重要のみ');
+  assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'), 'true');
+  searchTasks(app, ''); assert.deepEqual(app.visible(), ['a','c','e']);
+  const empty = boot(saved([]), language, { lists: true }); toggleImportant(empty); assert.match(empty.el('taskList').children[0].innerHTML, new RegExp(empty.run("t('noTasksTitle')")));
+});
+
+test('Reset all synchronizes the status highlight with the all-task list', async () => {
+  const app = boot(filterFixture(), 'en', { lists: true }); chooseStatus(app, 'placed');
+  await app.run('resetAll()');
+  assert.equal(app.run('filter'), 'all'); assert.equal(app.visible().length, 3);
+  assert.deepEqual(app.chips().filter(button => button.classList.contains('is-active')).map(button => button.dataset.filter), ['all']);
+  for (const chip of app.chips()) assert.equal(chip.getAttribute('aria-pressed'), String(chip.dataset.filter === 'all'));
+});
+
+test('Reset clears Important and search, while canceled Reset preserves them', async () => {
+  const app = boot(filterFixture(), 'en', { lists: true }); chooseStatus(app, 'placed'); toggleImportant(app); searchTasks(app, 'alpha');
+  app.run('AppConfirm.ask=async()=>false'); await app.run('resetAll()'); assert.deepEqual(app.visible(), ['a']);
+  app.run('AppConfirm.ask=async()=>true'); await app.run('resetAll()');
+  assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'), 'false'); assert.equal(app.el('taskSearch').value, ''); assert.equal(app.visible().length, 3);
+  assert.deepEqual(app.chips().filter(button => button.classList.contains('is-active')).map(button => button.dataset.filter), ['all']);
+});
+
+test('Important-only is session state and never changes the full board, backup, or stored state', () => {
+  const app = boot(filterFixture(), 'en', { lists: true }); const before = app.state();
+  const board = () => app.el('board').children.filter(el => el.dataset.taskId).map(el => ({ id: el.dataset.taskId, row: el.style.gridRow, col: el.style.gridColumn }));
+  const boardBefore = board(), cellsBefore = app.el('capacityCells').textContent;
+  assert.deepEqual(boardBefore.map(item => item.id), ['a','d','e']);
+  toggleImportant(app); chooseStatus(app, 'unplaced'); searchTasks(app, 'ALPHA'); assert.deepEqual(app.visible(), ['c']);
+  app.run('renderAll()'); assert.deepEqual(board(), boardBefore); assert.equal(app.el('capacityCells').textContent, cellsBefore);
+  assert.deepEqual(app.state(), before); assert.deepEqual(app.stored(), before); assert.deepEqual(plain(app.run('backupData().state')), before);
+  const reloaded = boot(app.stored(), 'en', { lists: true }); assert.deepEqual(reloaded.visible(), before.tasks.map(item => item.id)); assert.equal(reloaded.el('importantFilterButton').getAttribute('aria-pressed'), 'false');
+});
+
+test('Editing importance and completion Undo immediately update filtered membership without changing task order', () => {
+  const app = boot(filterFixture(), 'en', { lists: true }); toggleImportant(app);
+  app.run("openTaskDialog('c')"); app.el('taskImportantInput').checked = false; app.submit(); assert.deepEqual(app.visible(), ['a','e']);
+  app.undo(); assert.deepEqual(app.visible(), ['a','c','e']);
+  app.run("completeTask('a')"); assert.deepEqual(app.visible(), ['c','e']); app.undo(); assert.deepEqual(app.visible(), ['a','c','e']);
+  app.run("completeTask('c',{source:'mini'})"); assert.deepEqual(app.visible(), ['a','e']); assert.equal(app.run('undoMiniCompletion()'), true); assert.deepEqual(app.visible(), ['a','c','e']);
+  assert.deepEqual(app.state(), filterFixture());
+});
+
+test('Bulk selection stays keyed by ID when Important, search, status, and view hide selected tasks', () => {
+  const app = boot(filterFixture(), 'en', { lists: true, mobile: true }); app.run("setBulkMode(true);toggleBulkTask('b');toggleBulkTask('c')");
+  assert.deepEqual(plain(app.run('[...bulkSelectedIds]')), ['b','c']); toggleImportant(app); assert.deepEqual(app.visible(), ['c']);
+  searchTasks(app, 'nothing'); chooseStatus(app, 'placed'); app.run("setTaskViewMode('row')");
+  assert.deepEqual(plain(app.run('[...bulkSelectedIds]')), ['b','c']); assert.equal(app.el('mobileBulkCount').textContent, '2 selected');
+  searchTasks(app, ''); chooseStatus(app, 'unplaced'); toggleImportant(app); assert.deepEqual(app.visible(), ['b','c']);
+  for (const card of app.el('taskList').children) assert.match(card.className, /is-bulk-selected/);
+});
+
+for (const completed of ['a','b','c']) test(`Mini Undo restores ${completed} at its original index and persists/export/reloads every field`, () => {
+  const input = saved([task({id:'a',row:0,col:0}), task({id:'b',row:2,col:1}), task({id:'c',row:4,col:2})]); const app = boot(input);
+  app.run(`completeTask('${completed}',{source:'mini'})`); assert.equal(app.run('undoMiniCompletion()'), true);
+  assert.deepEqual(app.state(), input); assert.deepEqual(app.stored(), input); assert.deepEqual(plain(app.run('backupData().state')), input); assert.deepEqual(boot(app.stored()).state(), input);
+  assert.equal(app.run('undoMiniCompletion()'), false);
+});
+
+test('Mini Undo preserves intervening task edits, additions, reordering, and history mutations', () => {
+  const input = saved([task({id:'a',row:0,col:0}), task({id:'b',row:2,col:1}), task({id:'c',row:4,col:2})]); const app = boot(input);
+  app.run("completeTask('b',{source:'mini'});openTaskDialog('a')"); app.el('taskTitleInput').value='Edited after completion'; app.el('taskNoteInput').value='Keep newer note'; app.submit();
+  app.duplicate('a'); app.submit(); const copy = app.state().tasks.at(-1);
+  // Reordering uses the real operation; unrelated task order must not be reset by Mini Undo.
+  app.run("moveTaskToEnd('a');completeTask('c')"); const before = app.state();
+  assert.equal(app.run('undoMiniCompletion()'), true);
+  assert.deepEqual(app.state().tasks.map(item=>item.id), [copy.id,'b','a']);
+  assert.deepEqual(app.state().tasks[0], copy); assert.deepEqual(app.state().tasks[1], input.tasks[1]); assert.deepEqual(app.state().tasks[2], before.tasks[1]);
+  assert.deepEqual(app.state().history, before.history.filter(item=>item.id!=='b')); assert.equal(app.toast(), null);
+  assert.deepEqual(app.stored(), app.state()); assert.deepEqual(boot(app.stored()).state(), app.state());
+});
+
+test('Mini Undo clamps the saved index after other tasks disappear', () => {
+  const app = boot(saved([task({id:'a'}),task({id:'b',row:2}),task({id:'c',row:4})]));
+  app.run("completeTask('c',{source:'mini'});completeTask('a');completeTask('b')"); assert.equal(app.run('undoMiniCompletion()'), true); assert.deepEqual(app.state().tasks.map(item=>item.id), ['c']);
+});
+
+for (const blocked of ['occupied', 'smaller board']) test(`Mini Undo keeps original order but restores unplaced when ${blocked}`, () => {
+  const input=saved([task({id:'a',row:0,col:0}),task({id:'b',row:4,col:4}),task({id:'c',row:7,col:0})]);const app=boot(input);
+  app.run("completeTask('b',{source:'mini'})");
+  if (blocked==='occupied') { app.run("openTaskDialog('a')"); app.el('taskTitleInput').value='Edited';app.submit();app.run('state.tasks[0].row=4;state.tasks[0].col=4;saveState()'); }
+  else app.run('state.board={rows:3,cols:3};sanitizePlacements(state);saveState()');
+  const before=app.state();assert.equal(app.run('undoMiniCompletion()'),true);const restored=app.state();
+  assert.deepEqual(restored.tasks.map(item=>item.id),['a','b','c']);assert.equal(restored.tasks[1].row,null);assert.equal(restored.tasks[1].col,null);
+  assert.deepEqual(restored.tasks[0],before.tasks[0]);assert.deepEqual(restored.tasks[2],before.tasks[1]);assert.deepEqual(restored.board,before.board);
+});
+
+
+test('Marking a hidden ordinary task Important inserts it into filtered manual order, and Undo hides it again', () => {
+  const app=boot(filterFixture(),'en',{lists:true});toggleImportant(app);app.run("openTaskDialog('b')");app.el('taskImportantInput').checked=true;app.submit();
+  assert.deepEqual(app.visible(),['a','b','c','e']);assert.equal(app.state().tasks[1].important,true);
+  app.undo();assert.deepEqual(app.visible(),['a','c','e']);assert.equal(app.state().tasks[1].important,false);
+});
+
+test('Repeated Mini completions remember only the latest completed task and its index', () => {
+  const input=saved([task({id:'a',row:0}),task({id:'b',row:2}),task({id:'c',row:4})]);const app=boot(input);
+  app.run("completeTask('b',{source:'mini'});completeTask('a',{source:'mini'})");assert.equal(app.run('undoMiniCompletion()'),true);
+  assert.deepEqual(app.state().tasks,[input.tasks[0],input.tasks[2]]);assert.deepEqual(app.state().history.map(item=>item.id),['b']);assert.equal(app.run('undoMiniCompletion()'),false);
+});
+
+test('Manual order survives hiding, reordering, and revealing ordinary tasks', () => {
+  const app=boot(filterFixture(),'en',{lists:true});
+  toggleImportant(app); app.run("reorderTask('e','a','before')");
+  assert.deepEqual(app.visible(),['e','a','c']);
+  toggleImportant(app); assert.deepEqual(app.visible(),['e','a','b','c','d']);
+  assert.deepEqual(app.state().tasks.map(t=>t.id),['e','a','b','c','d']);
+  assert.deepEqual(boot(app.stored(),'en',{lists:true}).visible(),['e','a','b','c','d']);
+});
+
+test('Entering bulk mode keeps Important and search but synchronizes status chips', () => {
+  const app=boot(filterFixture(),'en',{lists:true,mobile:true});
+  chooseStatus(app,'placed');toggleImportant(app);searchTasks(app,'ALPHA');
+  app.run('setBulkMode(true)');
+  assert.equal(app.run('filter'),'unplaced');assert.deepEqual(app.visible(),['c']);
+  assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'),'true');
+  assert.deepEqual(app.chips().filter(x=>x.classList.contains('is-active')).map(x=>x.dataset.filter),['unplaced']);
+});
