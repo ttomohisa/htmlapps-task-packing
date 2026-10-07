@@ -6,12 +6,13 @@ const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
 const vm = require('node:vm');
 const html = readFileSync(resolve(__dirname, process.env.TASK_PACKING_HTML || '../src/index.template.html'), 'utf8');
+const config = JSON.parse(readFileSync(resolve(__dirname, '../app.config.json'), 'utf8'));
 const plain = value => JSON.parse(JSON.stringify(value));
 const task = (overrides = {}) => ({ id: 'original', title: '週次レビュー', note: 'Review <draft> & next steps\n確認', w: 2, h: 1, row: 0, col: 0, important: true, sample: false, createdAt: 1000, ...overrides });
 const saved = (tasks = [task()], history = []) => ({ version: 1, board: { rows: 9, cols: 9 }, tasks, history });
 
 function boot(input = saved(), language = 'en', { lists = false, mobile = false } = {}) {
-  const nodes = new Map(), all = [];
+  const nodes = new Map(), all = [], preferences = new Map();
   let stored = JSON.stringify(input), nextId = 0, now = 100000, toast = null;
   class Element {
     constructor() { this.children = []; this.attributes = {}; this.className = ''; this.value = ''; this.checked = false; this.hidden = false; this.open = false; this.dataset = {}; this.style = { setProperty(key, value) { this[key] = value; } }; this.listeners = {}; this.textContent = ''; this.selectionStart = 0; this.selectionEnd = 0; const classes = new Set(); this.classList = { toggle: (key, on) => on ? classes.add(key) : classes.delete(key), add: (...keys) => keys.forEach(key => classes.add(key)), remove: (...keys) => keys.forEach(key => classes.delete(key)), contains: key => classes.has(key) }; }
@@ -40,7 +41,7 @@ function boot(input = saved(), language = 'en', { lists = false, mobile = false 
   const document = { activeElement: null, body: new Element(), documentElement: {}, createElement: () => new Element(), querySelectorAll: selector => $$(selector) };
   const $ = selector => { const el = selector === '#sizePresets .size-preset[data-custom]' ? all.find(el => el.dataset.custom) : nodes.get(selector.slice(1)); assert.ok(el, `Missing DOM node ${selector}`); return el; };
   const $$ = selector => all.filter(el => { if (selector.includes('.size-preset')) return selector.includes('[data-w]') ? el.dataset.w : selector.includes('[data-custom]') ? el.dataset.custom : el.dataset.w || el.dataset.custom; if (selector.startsWith('.filter-chip')) return el.classList.contains('filter-chip') && (!selector.includes('[data-filter]') || el.dataset.filter); if (selector === '.task-view-button') return el.classList.contains('task-view-button'); const attr = selector.match(/^\[data-([\w-]+)\]$/); return attr ? el.dataset[attr[1].replace(/-([a-z])/g, (_, char) => char.toUpperCase())] !== undefined : false; });
-  const context = vm.createContext({ $, $$, document, Date: class extends Date { static now() { return ++now; } }, crypto: { randomUUID: () => `copy-${++nextId}` }, requestAnimationFrame: fn => fn(), window: { matchMedia: () => ({ matches: mobile }) }, localStorage: { getItem: key => key === 'task-packing:state-v1' ? stored : null, setItem: (key, value) => { if (key === 'task-packing:state-v1') stored = value; } }, AppConfirm: { ask: async () => true }, showToast: (message, options = {}) => { toast = { message, ...options }; }, APP_CONFIG: { name: 'Task Packing', nameJa: 'Task Packing' }, renderAll() {}, renderTaskList() {}, renderMiniBoard() {}, renderMiniBoardButton() {}, renderHistory() {}, renderBoard() {}, renderSettings() {}, renderPanelCollapse() {}, renderBulkControls() {}, endDrag() {}, detectLanguage: () => language, resetDragState() {}, setBulkMode() {}, AppToast: { dismiss() { toast=null; } }, location: { hash: '' }, clearBackupHash() {}, supportsCompressedUrlBackup: () => true, decodeBackupPayload: async () => ({}), console });
+  const context = vm.createContext({ $, $$, document, Date: class extends Date { static now() { return ++now; } }, crypto: { randomUUID: () => `copy-${++nextId}` }, requestAnimationFrame: fn => fn(), window: { matchMedia: () => ({ matches: mobile }) }, localStorage: { getItem: key => key === 'task-packing:state-v1' ? stored : preferences.get(key) ?? null, setItem: (key, value) => { if (key === 'task-packing:state-v1') stored = value; else preferences.set(key,value); } }, AppConfirm: { ask: async () => true }, showToast: (message, options = {}) => { toast = { message, ...options }; }, APP_CONFIG: config, BUILD_MANIFEST: {}, renderAll() {}, renderTaskList() {}, renderMiniBoard() {}, renderMiniBoardButton() {}, renderHistory() {}, renderBoard() {}, renderSettings() {}, renderPanelCollapse() {}, renderBulkControls() {}, endDrag() {}, detectLanguage: () => language, resetDragState() {}, setBulkMode() {}, AppToast: { dismiss() { toast=null; } }, location: { hash: '' }, clearBackupHash() {}, supportsCompressedUrlBackup: () => true, decodeBackupPayload: async () => ({}), console });
   const functions = ['t','readStorage','writeStorage','sampleBlueprintIndex','migrateLegacySamples','normalizeState','clampInt','saveState','snapshot','restoreSnapshot','uid','isPlaced','getTask','area','occupancy','canPlace','sanitizePlacements','getDetailTask','openTaskDetail','closeTaskDetail','renderTaskDetail','escapeHtml','isPresetSize','setCustomSizeVisible','openTaskDialog','closeTaskDialog','updateSizePresetState','submitTask','completeTask','restoreCompletedTask','hasSampleData','clearSampleData','backupData','importBackup','duplicateTask','undoMiniCompletion','validateBackup','applyBackupState','restoreBackupFromUrl','resetAll','reorderTask','moveTaskToEnd'];
   if (lists) functions.push('renderBoard','largestFreeRectangle','renderTaskList','renderTaskFilters','renderAll','renderBulkControls','setBulkMode','toggleBulkTask','setTaskViewMode','applyLanguage');
   const lines = html.split('\n');
@@ -51,9 +52,10 @@ function boot(input = saved(), language = 'en', { lists = false, mobile = false 
   const run = code => vm.runInContext(code, context);
   if (lists) {
     for (const line of lines.filter(line => line.trimStart().startsWith("$('#taskSearch').addEventListener") || line.trimStart().startsWith("$('#importantFilterButton').addEventListener"))) run(line);
+    for (const line of lines.filter(line => /^      \$\('#(?:languageButton|helpButton|helpDialog|versionBadge)'\)/.test(line))) run(line);
     run('renderAll()');
   }
-  return { el: id => nodes.get(id), document, run, chips: () => all.filter(el => el.dataset.filter), visible: () => nodes.get('taskList').children.filter(el => el.dataset.taskId).map(el => el.dataset.taskId), state: () => plain(run('state')), stored: () => JSON.parse(stored), toast: () => toast,
+  return { el: id => nodes.get(id), document, run, preferences, chips: () => all.filter(el => el.dataset.filter), visible: () => nodes.get('taskList').children.filter(el => el.dataset.taskId).map(el => el.dataset.taskId), state: () => plain(run('state')), stored: () => JSON.parse(stored), toast: () => toast,
     duplicate(id = 'original', source = 'task') { run(`openTaskDetail(${JSON.stringify(id)},${JSON.stringify(source)})`); const button = nodes.get('taskDetailDuplicate'); assert.ok(button, 'Details must contain a Duplicate button'); button.dispatch('click'); },
     submit() { nodes.get('taskForm').dispatch('submit'); }, undo() { assert.equal(typeof toast?.onAction, 'function'); toast.onAction(); },
   };
@@ -341,3 +343,33 @@ test('Entering bulk mode keeps Important and search but synchronizes status chip
   assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'),'true');
   assert.deepEqual(app.chips().filter(x=>x.classList.contains('is-active')).map(x=>x.dataset.filter),['unplaced']);
 });
+
+for (const language of ['ja','en']) {
+  test(`${language}: header target, privacy, Help and version remain localized through repeated toggles`, () => {
+    const app=boot(filterFixture(),language,{lists:true}),button=app.el('languageButton');app.run('applyLanguage()');
+    for (const current of [language,language==='ja'?'en':'ja',language]) {
+      assert.equal(app.document.documentElement.lang,current);assert.equal(button.textContent,current==='ja'?'EN':'JA');
+      const target=current==='ja'?'英語に切り替え':'Switch to Japanese';
+      assert.equal(button.getAttribute('aria-label'),target);assert.equal(button.title,target);
+      assert.equal(app.document.querySelectorAll('[data-i18n]').find(el=>el.dataset.i18n==='localBadge').textContent,current==='ja'?'完全ローカル処理':'Fully local processing');
+      const help=current==='ja'?'使い方と注意事項':'How to use & notes';
+      assert.equal(app.el('helpButton').getAttribute('aria-label'),help);assert.equal(app.el('helpButton').title,help);assert.equal(app.el('helpTitleText').textContent,help);
+      app.el('helpButton').dispatch('click');assert.equal(app.el('helpDialog').open,true);app.el('closeHelpButton').dispatch('click');assert.equal(app.el('helpDialog').open,false);
+      assert.equal(app.el('versionBadge').textContent,'v'+config.version);assert.equal(app.el('buildVersion').textContent,config.version);
+      button.dispatch('click');
+    }
+  });
+  test(`${language}: language clicks preserve tasks, history, board, filters, selection and pending Undo`, () => {
+    const app=boot(filterFixture(),language,{lists:true,mobile:true});app.run("completeTask('b');setTaskViewMode('row');setBulkMode(true);toggleBulkTask('c')");
+    chooseStatus(app,'unplaced');toggleImportant(app);searchTasks(app,'ALPHA');
+    const before=app.state(),stored=app.stored(),backupBefore=plain(app.run('backupData().state'));
+    const board=()=>app.el('board').children.filter(el=>el.dataset.taskId).map(el=>({id:el.dataset.taskId,row:el.style.gridRow,col:el.style.gridColumn}));
+    const boardBefore=board();
+    for(let i=0;i<2;i++) {
+      app.el('languageButton').dispatch('click');assert.deepEqual(app.state(),before);assert.deepEqual(app.stored(),stored);assert.deepEqual(plain(app.run('backupData().state')),backupBefore);assert.deepEqual(board(),boardBefore);
+      assert.equal(app.run('filter'),'unplaced');assert.equal(app.el('importantFilterButton').getAttribute('aria-pressed'),'true');assert.equal(app.el('taskSearch').value,'ALPHA');assert.equal(app.el('taskList').classList.contains('is-row-view'),true);assert.deepEqual(app.visible(),['c']);assert.deepEqual(plain(app.run('[...bulkSelectedIds]')),['c']);
+      assert.equal(app.preferences.get('task-packing:language'),i===0?(language==='ja'?'en':'ja'):language);
+    }
+    app.undo();assert.equal(app.state().history.length,0);assert.ok(app.state().tasks.some(item=>item.id==='b'));
+  });
+}

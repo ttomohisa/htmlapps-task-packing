@@ -11,6 +11,11 @@
 - Fixed legacy sample detection so explicitly normal tasks, including sample copies, stay normal after reload, Undo, and JSON restore.
 - Added dependency-free task-flow regression tests and Japanese/English guidance.
 
+## 1.0.3 - 2026-10-07
+
+- Normalize the header language target to EN / JA with matching localized accessible labels and tooltips. Keep local-processing and Help text localized.
+- Add regression coverage for repeated language switches preserving working data, filters, and Undo.
+
 ## 1.0.2 - 2026-08-26
 - Board tiles now preview task notes when enough space is available, with the visible line count adapting to each rendered tile size.
 - Mini board tiles now show the same kind of space-aware note preview.

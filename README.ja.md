@@ -11,6 +11,8 @@
 
 無限に増やせるToDoリストとは別に、Task Packingでは **「タスク一覧」と「有限ボード」** を分離しています。やること自体は一覧に保持したまま、自分が今抱えられる仕事だけをボードへ配置します。
 
+ヘッダーの **EN / JA** で言語を切り替えても、検索条件や保存済みデータはそのまま残ります。隣の使い方ボタンと完全ローカル処理の表示も選んだ言語に切り替わります。
+
 ## 🚀 Live demo
 
 ### [Task PackingをGitHub Pagesで開く](https://ttomohisa.github.io/htmlapps-task-packing/)

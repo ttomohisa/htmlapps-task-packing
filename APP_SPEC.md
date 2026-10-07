@@ -80,6 +80,8 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 
 ## 7. UX and accessibility
 
+- Header language control shows the target EN / JA, with matching localized aria-label and title (`英語に切り替え` / `Switch to Japanese`). Switching language preserves current data and useful UI state. Privacy remains `完全ローカル処理` / `Fully local processing`, and Help is localized.
+
 - Desktop: task list and completion history at left, capacity board at right, settings below. Task list starts expanded; Completion history starts collapsed; both are independently collapsible.
 - Smartphone: four bottom tabs (Tasks / Board / History / Settings); only one page is shown at a time.
 - Mobile multi-placement must work without HTML drag-and-drop and must validate capacity before committing.
