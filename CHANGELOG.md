@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 - 2026-10-09
+
+- Normalize brand icon backgrounds to #16624f with exact 25% corner radii across SVG assets, header icons, and embedded favicons, preserving existing artwork.
+- Add focused brand representation regression checks.
+
 ## Unreleased
 - Added a session-only Important-only task-list filter that combines with placement status and title/note search in Japanese/English, without altering task order, board data, or complete backups.
 - Fixed Reset all leaving a stale status-filter highlight; filter buttons now render their active and pressed states from current filter state.
