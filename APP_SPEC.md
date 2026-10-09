@@ -129,3 +129,7 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - JSON backup restores active tasks, history, importance, sizes, board dimensions, and valid positions. URL backup uses the same state shape and restore validation, gzip compression plus Base64URL encoding, and remains secondary and size-limited.
 - Board image export produces a downloadable PNG without network access or interactive controls.
 - Mini board opens and syncs on supported browsers, while the Mini board button is absent when unsupported.
+
+## Brand icon consistency
+
+- Brand backgrounds use #16624f with corner radii equal to exactly 25% of each background axis. Preserve foreground artwork, placement, and existing canvas padding across SVG assets, app headers, and embedded favicons.

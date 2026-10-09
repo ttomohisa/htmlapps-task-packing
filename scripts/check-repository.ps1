@@ -150,3 +150,6 @@ if ($ForceDownload) { $buildArguments.ForceDownload = $true }
 & (Join-Path $Root "build-standalone.ps1") @buildArguments
 
 Write-Host "[OK] Repository check passed." -ForegroundColor Green
+
+& node --test (Join-Path $Root "tests/icon-brand.test.cjs")
+if ($LASTEXITCODE -ne 0) { throw "Brand icon regression failed." }

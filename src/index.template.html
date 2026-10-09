@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#f5f5f2">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Task Packing</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316624F'/%3E%3Cg fill='none' stroke='white' stroke-width='3'%3E%3Crect x='13' y='13' width='38' height='38' rx='3'/%3E%3Cpath d='M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38' opacity='.42'/%3E%3Crect x='15.5' y='15.5' width='20.3' height='20.3' rx='2' fill='white' stroke='none'/%3E%3Crect x='38.8' y='15.5' width='9.7' height='9.7' rx='2' fill='white' stroke='none'/%3E%3Crect x='38.8' y='28.8' width='9.7' height='19.7' rx='2' fill='white' stroke='none'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'16'%20fill%3D'%2316624F'/%3E%3Cg%20fill%3D'none'%20stroke%3D'white'%20stroke-width%3D'3'%3E%3Crect%20x%3D'13'%20y%3D'13'%20width%3D'38'%20height%3D'38'%20rx%3D'3'/%3E%3Cpath%20d%3D'M25.7%2013v38M38.3%2013v38M13%2025.7h38M13%2038.3h38'%20opacity%3D'.42'/%3E%3Crect%20x%3D'15.5'%20y%3D'15.5'%20width%3D'20.3'%20height%3D'20.3'%20rx%3D'2'%20fill%3D'white'%20stroke%3D'none'/%3E%3Crect%20x%3D'38.8'%20y%3D'15.5'%20width%3D'9.7'%20height%3D'9.7'%20rx%3D'2'%20fill%3D'white'%20stroke%3D'none'/%3E%3Crect%20x%3D'38.8'%20y%3D'28.8'%20width%3D'9.7'%20height%3D'19.7'%20rx%3D'2'%20fill%3D'white'%20stroke%3D'none'/%3E%3C/g%3E%3C/svg%3E">
   <style>
     :root {
       color-scheme: light;
@@ -29,7 +29,7 @@
     .app-header { position:sticky; top:0; z-index:40; min-height:var(--header-height); border-bottom:1px solid color-mix(in srgb,var(--line) 82%,transparent); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(16px) saturate(1.2); }
     .header-inner { width:min(1320px,100%); min-height:var(--header-height); margin:0 auto; padding:10px clamp(14px,2.8vw,30px); display:flex; align-items:center; gap:14px; }
     .brand { display:flex; align-items:center; gap:10px; min-width:0; }
-    .brand-mark { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:11px; background:var(--accent); color:#fff; box-shadow:var(--shadow-sm); }
+    .brand-mark { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:25%; background:var(--accent); color:#fff; box-shadow:var(--shadow-sm); }
     .brand-mark svg { width:25px; height:25px; display:block; }
     .brand-copy { min-width:0; }
     .brand-name { margin:0; font-size:17px; line-height:1.2; letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -359,7 +359,7 @@
           <svg viewBox="0 0 32 32" fill="none"><rect x="2.5" y="2.5" width="27" height="27" rx="2.7" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.2v25.6M20 3.2v25.6M3.2 12h25.6M3.2 20h25.6" stroke="currentColor" stroke-width="1.2" opacity=".4"/><rect x="4.5" y="4.5" width="13.5" height="13.5" rx="1.6" fill="currentColor"/><rect x="20.8" y="4.5" width="6.7" height="6.7" rx="1.5" fill="currentColor"/><rect x="20.8" y="13.8" width="6.7" height="13.7" rx="1.5" fill="currentColor"/></svg>
         </div>
         <div class="brand-copy">
-          <h1 class="brand-name"><span id="brandName">Task Packing</span><span class="version-badge" id="versionBadge">v1.0.3</span></h1>
+          <h1 class="brand-name"><span id="brandName">Task Packing</span><span class="version-badge" id="versionBadge">v1.0.4</span></h1>
           <p class="brand-meta" data-i18n="brandMeta">To-do list · Finite board · Completion history</p>
         </div>
       </div>
