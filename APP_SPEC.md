@@ -3,6 +3,7 @@
 ## 1. Product identity
 
 - **Working name:** Task Packing
+- **Current implementation version:** v1.0.5
 - **One-sentence purpose:** Give tasks physical size and fit them onto a finite board so capacity is visible before more work is accepted.
 - **Primary users:** Individuals who want a lightweight local-first alternative to endless task backlogs.
 - **Release artifacts:** `dist/index.html` and `dist/index.self-extract.html`
@@ -86,6 +87,8 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Smartphone: four bottom tabs (Tasks / Board / History / Settings); only one page is shown at a time.
 - Mobile multi-placement must work without HTML drag-and-drop and must validate capacity before committing.
 - Visible keyboard focus, accessible Details/Complete labels, and keyboard-selectable board tasks.
+- Native Help, task, detail, and confirmation dialogs lock both document scroll containers while modal. Their existing scrolling cards and sticky headers remain unchanged; closing restores normal page scrolling.
+- Initial header and build-information version labels match the app configuration.
 - Respect `prefers-reduced-motion`.
 - Do not use emoji as primary iconography.
 
@@ -127,6 +130,7 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - Mobile can select multiple unplaced tasks and place the whole selection atomically. Capacity failure and shape/layout failure are reported without partial placement.
 - Sample data can be cleared independently without touching user-created tasks or history; the clear button disappears afterward, Undo restores it, and Reset all recreates the samples.
 - JSON backup restores active tasks, history, importance, sizes, board dimensions, and valid positions. URL backup uses the same state shape and restore validation, gzip compression plus Base64URL encoding, and remains secondary and size-limited.
+- At short viewport heights, dialog headers/Close and final content/actions remain reachable, outside-wheel scrolling does not move the background, and closing/reopening restores normal navigation. Keyboard activation of child actions must preserve its intended result when the click bubbles to a backdrop handler.
 - Board image export produces a downloadable PNG without network access or interactive controls.
 - Mini board opens and syncs on supported browsers, while the Mini board button is absent when unsupported.
 

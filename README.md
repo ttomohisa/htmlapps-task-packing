@@ -13,6 +13,8 @@ Instead of letting an endless backlog make everything look equally possible, Tas
 
 Use **EN / JA** in the header to switch language without clearing your search or saved data. The adjacent Help button and local-processing badge follow the selected language.
 
+While a dialog is open, the background stays still and content scrolls inside the dialog. Close Help with its Close button, Escape, or a click on the backdrop.
+
 ## 🚀 Live demo
 
 ### [Open Task Packing on GitHub Pages](https://ttomohisa.github.io/htmlapps-task-packing/)
@@ -220,4 +222,4 @@ Licensed under the [MIT License](LICENSE).
 
 ### Regression tests
 
-Run `node --test` with Node.js 20 or newer. `scripts/check-repository.ps1` runs the same dependency-free behavior tests before building and verifying both HTML variants. The test DOM adapter does not model native dialog, layout, or focus behavior; browser verification is still required.
+Run `node --test` with Node.js 20 or newer. `scripts/check-repository.ps1` runs the dependency-free task behavior tests before building and verifying both HTML variants, then checks brand representations and modal contracts across source and readable releases. The test DOM adapter does not model native dialog, layout, or focus behavior; browser verification is still required.

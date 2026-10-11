@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5 - 2026-10-11
+
+- Lock document scrolling behind native dialogs without changing their existing card/header layout, task behavior, or dismissal handlers.
+- Synchronize initial header and build-information version labels with the release configuration.
+- Add modal-layout contracts, keyboard child-action bubbling regressions, and Japanese/English Help guidance; preserve the existing local-processing shield.
+
 ## 1.0.4 - 2026-10-09
 
 - Normalize brand icon backgrounds to #16624f with exact 25% corner radii across SVG assets, header icons, and embedded favicons, preserving existing artwork.

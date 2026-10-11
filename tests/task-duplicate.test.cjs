@@ -61,6 +61,22 @@ function boot(input = saved(), language = 'en', { lists = false, mobile = false 
   };
 }
 
+test('keyboard Duplicate keeps its new Add draft after bubbling through the old detail backdrop handler', () => {
+  const app = boot();
+  const before = app.state();
+  app.run("openTaskDetail('original');detailOpenedAt=0;");
+  const child = app.el('taskDetailDuplicate');
+  child.dispatch('click', { detail: 0, clientX: 0, clientY: 0 });
+  app.el('taskDetailDialog').dispatch('click', { target: child, detail: 0, clientX: 0, clientY: 0 });
+  assert.equal(app.el('taskDetailDialog').open, false);
+  assert.equal(app.el('taskDialog').open, true);
+  assert.equal(app.el('taskTitleInput').value, before.tasks[0].title);
+  assert.deepEqual(app.state(), before);
+  app.submit();
+  assert.equal(app.state().tasks.length, 2);
+  assert.notEqual(app.state().tasks[1].id, before.tasks[0].id);
+});
+
 for (const source of ['placed', 'unplaced', 'history']) test(`Duplicate ${source} opens a selected, prefilled Add draft without mutations`, () => {
   const original = source === 'history' ? task({ row: undefined, col: undefined, completedAt: 5000 }) : task({ row: source === 'placed' ? 0 : null, col: source === 'placed' ? 0 : null });
   const app = boot(source === 'history' ? saved([], [original]) : saved([original])); const before = app.state(), storageBefore = app.stored();
