@@ -153,3 +153,15 @@ Write-Host "[OK] Repository check passed." -ForegroundColor Green
 
 & node --test (Join-Path $Root "tests/icon-brand.test.cjs")
 if ($LASTEXITCODE -ne 0) { throw "Brand icon regression failed." }
+
+# Modal contracts cover editable source, generated release, and the checked-in download.
+$previousTestHtml = $env:TASK_PACKING_HTML
+try {
+  foreach ($htmlPath in @("src/index.template.html", "dist/index.html", "task-packing.html")) {
+    $env:TASK_PACKING_HTML = Join-Path $Root $htmlPath
+    & node --test (Join-Path $Root "tests/modal-layout.test.cjs")
+    if ($LASTEXITCODE -ne 0) { throw "Modal layout regression failed for $htmlPath." }
+  }
+} finally {
+  $env:TASK_PACKING_HTML = $previousTestHtml
+}
