@@ -29,11 +29,11 @@ test('initial version labels match release configuration', () => {
   assert.equal(html.match(/id="buildVersion">([^<]+)/)[1], config.version);
 });
 
-test('Help explains locked background scrolling in both languages', () => {
+test('Help omits implementation commentary and retains user instructions', () => {
   const help = html.match(/<!-- APP:HELP:BEGIN -->([\s\S]*?)<!-- APP:HELP:END -->/)[1];
   assert.match(help, /data-i18n="helpDialogScroll"/);
-  assert.match(html, /helpDialogScroll:'[^']*背景[^']*スクロール[^']*'/);
-  assert.match(html, /helpDialogScroll:'[^']*background[^']*scroll[^']*'/);
+  assert.doesNotMatch(html, /helpDialogScroll:'[^']*背景[^']*スクロール[^']*'/);
+  assert.doesNotMatch(html, /helpDialogScroll:'[^']*background[^']*scroll[^']*'/);
 });
 
 test('local-processing badge keeps its existing shield', () => {

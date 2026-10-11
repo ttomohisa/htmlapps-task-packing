@@ -13,7 +13,7 @@ Instead of letting an endless backlog make everything look equally possible, Tas
 
 Use **EN / JA** in the header to switch language without clearing your search or saved data. The adjacent Help button and local-processing badge follow the selected language.
 
-While a dialog is open, the background stays still and content scrolls inside the dialog. Close Help with its Close button, Escape, or a click on the backdrop.
+Close Help with its Close button, Escape, or a click on the backdrop.
 
 ## 🚀 Live demo
 
