@@ -84,7 +84,9 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Header language control shows the target EN / JA, with matching localized aria-label and title (`英語に切り替え` / `Switch to Japanese`). Switching language preserves current data and useful UI state. Privacy remains `完全ローカル処理` / `Fully local processing`, and Help is localized.
 
 - Desktop: task list and completion history at left, capacity board at right, settings below. Task list starts expanded; Completion history starts collapsed; both are independently collapsible.
-- Smartphone: four bottom tabs (Tasks / Board / History / Settings); only one page is shown at a time.
+- Smartphone: four bottom tabs (Tasks / Board / History / Settings); only one page is shown at a time. Selecting a tab scrolls its panel top to 8px below the measured sticky header, respecting reduced motion. Short panels retain enough height for that scroll target. The app footer is hidden on smartphones.
+- Smartphone Board has an Add button beside its title. It opens the shared Add form without changing tabs; Save, Cancel, Close, and Escape retain the Board. Saving creates an unplaced task using existing validation, persistence, and Undo. It does not auto-place or alter schema-1 data.
+- The Japanese intro headline is 「やることをキャパの中に収める」. Help omits language-switch and dismissal boilerplate while retaining actual usage, privacy, backup, and data-loss guidance.
 - Mobile multi-placement must work without HTML drag-and-drop and must validate capacity before committing.
 - Visible keyboard focus, accessible Details/Complete labels, and keyboard-selectable board tasks.
 - Native Help, task, detail, and confirmation dialogs lock both document scroll containers while modal. Their existing scrolling cards and sticky headers remain unchanged; closing restores normal page scrolling.
@@ -127,6 +129,8 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - Dragging a placed task onto the task list unplaces it.
 - Dragging active tasks to history completes them; dragging history back restores them.
 - Shrinking the board does not delete tasks.
+- Mobile Board Add creates an independent unplaced task, preserves existing tasks, and leaves Board selected after save/cancel/reopen. Empty title and the 500-task limit retain the form and draft. Undo removes the new task; reload retains saved data.
+- Mobile tab switches and repeated taps target the selected content frame below the sticky header, including short History pages, without scrolling desktop layouts.
 - Mobile can select multiple unplaced tasks and place the whole selection atomically. Capacity failure and shape/layout failure are reported without partial placement.
 - Sample data can be cleared independently without touching user-created tasks or history; the clear button disappears afterward, Undo restores it, and Reset all recreates the samples.
 - JSON backup restores active tasks, history, importance, sizes, board dimensions, and valid positions. URL backup uses the same state shape and restore validation, gzip compression plus Base64URL encoding, and remains secondary and size-limited.

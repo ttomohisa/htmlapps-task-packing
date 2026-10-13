@@ -12,6 +12,10 @@
 - Add focused brand representation regression checks.
 
 ## Unreleased
+- Add a mobile Board entry point for the existing task form; saving keeps Board selected and creates an unplaced task with normal validation and Undo.
+- Scroll mobile tabs to the selected content panel below the sticky header instead of the page intro, including short panels and reduced-motion preferences.
+- Shorten the Japanese headline, remove redundant language/dismissal Help copy in both languages, and hide the app footer on smartphones.
+- Add source/readable/download regression coverage for mobile navigation, Board Add/cancel/capacity, and copy/layout parity.
 - Added a session-only Important-only task-list filter that combines with placement status and title/note search in Japanese/English, without altering task order, board data, or complete backups.
 - Fixed Reset all leaving a stale status-filter highlight; filter buttons now render their active and pressed states from current filter state.
 - Fixed Mini board completion Undo appending tasks out of order. It now restores the original list index while retaining intervening edits and placement/capacity protection.

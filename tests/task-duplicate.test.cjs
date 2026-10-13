@@ -389,3 +389,37 @@ for (const language of ['ja','en']) {
     app.undo();assert.equal(app.state().history.length,0);assert.ok(app.state().tasks.some(item=>item.id==='b'));
   });
 }
+
+for (const language of ['ja', 'en']) test(`${language}: mobile Board Add reuses the form, stays on Board, saves unplaced and supports Undo`, () => {
+  const app = boot(saved(), language, { mobile: true });
+  app.el('tasksPage').classList.remove('is-mobile-active'); app.el('boardPage').classList.add('is-mobile-active');
+  const before = app.state(), add = app.el('boardAddTaskButton');
+  assert.ok(add, 'Board needs an Add action on mobile');
+  add.dispatch('click'); assert.equal(app.el('taskDialog').open, true);
+  assert.equal(app.el('taskTitleInput').value, '');
+  app.el('taskTitleInput').value = 'Board-created task'; app.el('taskNoteInput').value = 'Still unplaced'; app.el('taskImportantInput').checked = true;
+  app.submit();
+  const added = app.state().tasks.at(-1);
+  assert.equal(added.title, 'Board-created task'); assert.equal(added.note, 'Still unplaced'); assert.equal(added.important, true); assert.equal(added.row, null); assert.equal(added.col, null);
+  assert.deepEqual(app.state().tasks.slice(0,-1), before.tasks); assert.deepEqual(app.stored(), app.state());
+  assert.equal(app.el('boardPage').classList.contains('is-mobile-active'), true); assert.equal(app.el('tasksPage').classList.contains('is-mobile-active'), false);
+  app.undo(); assert.deepEqual(app.state(), before);
+});
+
+for (const close of ['cancelTaskButton', 'closeTaskDialog', 'Escape']) test(`mobile Board Add ${close} keeps Board and data unchanged`, () => {
+  const app = boot(saved(), 'en', { mobile: true });
+  app.el('tasksPage').classList.remove('is-mobile-active'); app.el('boardPage').classList.add('is-mobile-active');
+  const before = app.state(), add = app.el('boardAddTaskButton'); assert.ok(add, 'Board needs an Add action on mobile');
+  add.dispatch('click'); app.el('taskTitleInput').value = 'Do not save';
+  if (close === 'Escape') app.el('taskDialog').dispatch('cancel'); else app.el(close).dispatch('click');
+  assert.equal(app.el('taskDialog').open, false); assert.deepEqual(app.state(), before); assert.deepEqual(app.stored(), before); assert.equal(app.el('boardPage').classList.contains('is-mobile-active'), true);
+  add.dispatch('click'); assert.equal(app.el('taskTitleInput').value, '');
+});
+
+test('mobile Board Add keeps its draft and Board when at the task limit', () => {
+  const app = boot(saved(Array.from({ length: 500 }, (_, i) => task({ id: `limit-${i}`, row: null, col: null }))), 'en', { mobile: true });
+  app.el('tasksPage').classList.remove('is-mobile-active'); app.el('boardPage').classList.add('is-mobile-active');
+  const before = app.state(), add = app.el('boardAddTaskButton'); assert.ok(add, 'Board needs an Add action on mobile');
+  add.dispatch('click'); app.el('taskTitleInput').value = 'Keep draft'; app.submit();
+  assert.deepEqual(app.state(), before); assert.equal(app.el('taskDialog').open, true); assert.equal(app.el('taskTitleInput').value, 'Keep draft'); assert.equal(app.el('taskFormError').hidden, false); assert.equal(app.el('boardPage').classList.contains('is-mobile-active'), true);
+});

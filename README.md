@@ -66,7 +66,9 @@ The core app does not require a local web server. The optional **Mini board** de
 
 ## Usage
 
-1. Add a task from the task list. Use the card/row toggle beside the filters when you want either richer context or a denser one-line overview.
+On mobile, the bottom tabs move to the selected panel just below the fixed header. The app footer is hidden to keep the workspace clear.
+
+1. Add a task from the task list, or from the Board heading on mobile. The same Add form opens; saving from Board keeps that tab selected and creates an unplaced task. Use the card/row toggle beside the filters when you want either richer context or a denser one-line overview.
 2. Choose its size. Use XS–XL for quick sizing, or choose **Other** to reveal custom width/height fields.
 3. Optionally mark the task as **Important** and add a note.
 4. On desktop, drag an unplaced task onto the board. The **Place** action can also auto-place a single task into the first suitable free area.

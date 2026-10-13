@@ -31,7 +31,8 @@ test('initial version labels match release configuration', () => {
 
 test('Help omits implementation commentary and retains user instructions', () => {
   const help = html.match(/<!-- APP:HELP:BEGIN -->([\s\S]*?)<!-- APP:HELP:END -->/)[1];
-  assert.match(help, /data-i18n="helpDialogScroll"/);
+  assert.match(help, /data-i18n="helpStep1"/);
+  assert.doesNotMatch(help, /data-i18n="(?:helpLanguage|helpDialogScroll)"/);
   assert.doesNotMatch(html, /helpDialogScroll:'[^']*背景[^']*スクロール[^']*'/);
   assert.doesNotMatch(html, /helpDialogScroll:'[^']*background[^']*scroll[^']*'/);
 });
