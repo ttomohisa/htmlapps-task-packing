@@ -82,28 +82,14 @@ test('locale changes keep declared title sizing and allow normal zoom', () => {
   assert.doesNotMatch(css, /(?:\[lang[^\]]*\]|:lang\([^)]*\))[^{}]*\{[^}]*font-size/);
 });
 
-test('Help leads with three concise add/place/complete steps in both languages', () => {
-  const help = html.match(/<!-- APP:HELP:BEGIN -->([\s\S]*?)<!-- APP:HELP:END -->/)[1];
-  const steps = help.match(/<ol class="help-steps">([\s\S]*?)<\/ol>/);
-  assert.ok(steps, 'Help needs a short, clearly separated primary flow');
-  assert.equal([...steps[1].matchAll(/<li>/g)].length, 3);
-  const context = vm.createContext({});
-  vm.runInContext(html.slice(html.indexOf('const translations='), html.indexOf('const $=')) + '\nglobalThis.copy=translations;', context);
-  for (const language of ['ja', 'en']) {
-    const copy = context.copy[language];
-    for (let index = 1; index <= 3; index++) {
-      assert.ok(copy[`helpStep${index}Title`]);
-      assert.ok(copy[`helpStep${index}`].length <= (language === 'ja' ? 50 : 100), `${language} step ${index} should be readable at a glance`);
-    }
-    assert.match(copy.helpStep3, language === 'ja' ? /✓.*元に戻す/ : /✓.*Undo/);
-    assert.match(copy.helpStep2, language === 'ja' ? /タスク一覧.*まとめて配置/ : /Place multiple.*task list/);
-    assert.match(copy.helpNoteCapacity, language === 'ja' ? /収まらないタスク/ : /tasks that no longer fit/);
-    assert.match(copy.helpNoteStorage, /JSON/);
-    assert.match(copy.helpNoteUrl, language === 'ja' ? /暗号化されません/ : /not encrypted/);
-    assert.match(copy.helpNoteDestructive, language === 'ja' ? /元に戻せません/ : /cannot be undone/);
-    assert.match(copy.helpTaskLimit, /500/);
-    const visible = [...help.matchAll(/data-i18n="([^"]+)"/g)].map(([, key]) => copy[key]).join(' ');
-    assert.ok(visible.length < (language === 'ja' ? 620 : 1350), 'Do not move the old prose into another wall of text');
-    assert.doesNotMatch(visible, /CSP|schema|stale|世代|ID重複|古い読み込み結果/);
+test('Help restores the detailed pre-shortening structure with current Board-add semantics', () => {
+  const help=html.match(/<!-- APP:HELP:BEGIN -->([\s\S]*?)<!-- APP:HELP:END -->/)[1];
+  const context=vm.createContext({});vm.runInContext(html.slice(html.indexOf('const translations='),html.indexOf('const $='))+'\nglobalThis.copy=translations;',context);
+  for(const key of ['helpStep1','helpStep2','helpStep3','helpStep4','helpTaskFilters','helpDuplicate','helpTaskLimit','helpPrivacyBody','helpNoteStorage','helpNoteResize','helpNoteDrag','helpBackupValidation','helpMiniBoard','helpOffline'])assert.ok(help.includes(`data-i18n="${key}"`),key);
+  assert.doesNotMatch(help,/help-steps|helpStep1Title|helpMobileAdd|helpLanguage|helpDialogScroll/);
+  for(const language of ['ja','en']){
+    const copy=context.copy[language];assert.match(copy.helpStep1,language==='ja'?/ボード.*直接配置/:/Board.*directly/);
+    assert.match(copy.helpStep3,/4×4/);assert.match(copy.helpStep4,language==='ja'?/重なる/:/overlap/);
+    assert.match(copy.helpNoteStorage,/JSON/);assert.match(copy.helpTaskLimit,/500/);
   }
 });

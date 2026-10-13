@@ -13,8 +13,8 @@
 
 ## Unreleased
 - Normalize mobile text-size adjustment without restricting zoom and keep the English product-name language stable across JA/EN switches.
-- Rewrite Help as three short Add / Place / Complete steps, retain concise privacy and data-loss warnings, and remove implementation-heavy feature prose.
-- Add a mobile Board entry point for the existing task form; saving keeps Board selected and creates an unplaced task with normal validation and Undo.
+- Restore the detailed Help/basic-operation prose at the user’s request, retaining the earlier removal of language-switch and Help-dismissal instructions.
+- Add a mobile Board entry point for the existing task form; saving keeps Board selected and places the task directly using existing first-fit rules. No-fit validation retains the draft without creating a task; creation and placement share one Undo. List Add and Duplicate remain unplaced.
 - Scroll mobile tabs to the selected content panel below the sticky header instead of the page intro, including short panels and reduced-motion preferences.
 - Shorten the Japanese headline, remove redundant language/dismissal Help copy in both languages, and hide the app footer on smartphones.
 - Add source/readable/download regression coverage for mobile navigation, Board Add/cancel/capacity, and copy/layout parity.

@@ -42,7 +42,7 @@ function boot(input = saved(), language = 'en', { lists = false, mobile = false 
   const $ = selector => { const el = selector === '#sizePresets .size-preset[data-custom]' ? all.find(el => el.dataset.custom) : nodes.get(selector.slice(1)); assert.ok(el, `Missing DOM node ${selector}`); return el; };
   const $$ = selector => all.filter(el => { if (selector.includes('.size-preset')) return selector.includes('[data-w]') ? el.dataset.w : selector.includes('[data-custom]') ? el.dataset.custom : el.dataset.w || el.dataset.custom; if (selector.startsWith('.filter-chip')) return el.classList.contains('filter-chip') && (!selector.includes('[data-filter]') || el.dataset.filter); if (selector === '.task-view-button') return el.classList.contains('task-view-button'); const attr = selector.match(/^\[data-([\w-]+)\]$/); return attr ? el.dataset[attr[1].replace(/-([a-z])/g, (_, char) => char.toUpperCase())] !== undefined : false; });
   const context = vm.createContext({ $, $$, document, Date: class extends Date { static now() { return ++now; } }, crypto: { randomUUID: () => `copy-${++nextId}` }, requestAnimationFrame: fn => fn(), window: { matchMedia: () => ({ matches: mobile }) }, localStorage: { getItem: key => key === 'task-packing:state-v1' ? stored : preferences.get(key) ?? null, setItem: (key, value) => { if (key === 'task-packing:state-v1') stored = value; else preferences.set(key,value); } }, AppConfirm: { ask: async () => true }, showToast: (message, options = {}) => { toast = { message, ...options }; }, APP_CONFIG: config, BUILD_MANIFEST: {}, renderAll() {}, renderTaskList() {}, renderMiniBoard() {}, renderMiniBoardButton() {}, renderHistory() {}, renderBoard() {}, renderSettings() {}, renderPanelCollapse() {}, renderBulkControls() {}, endDrag() {}, detectLanguage: () => language, resetDragState() {}, setBulkMode() {}, AppToast: { dismiss() { toast=null; } }, location: { hash: '' }, clearBackupHash() {}, supportsCompressedUrlBackup: () => true, decodeBackupPayload: async () => ({}), console });
-  const functions = ['t','readStorage','writeStorage','sampleBlueprintIndex','migrateLegacySamples','normalizeState','clampInt','saveState','snapshot','restoreSnapshot','uid','isPlaced','getTask','area','occupancy','canPlace','sanitizePlacements','getDetailTask','openTaskDetail','closeTaskDetail','renderTaskDetail','escapeHtml','isPresetSize','setCustomSizeVisible','openTaskDialog','closeTaskDialog','updateSizePresetState','submitTask','completeTask','restoreCompletedTask','hasSampleData','clearSampleData','backupData','importBackup','duplicateTask','undoMiniCompletion','validateBackup','applyBackupState','restoreBackupFromUrl','resetAll','reorderTask','moveTaskToEnd'];
+  const functions = ['t','readStorage','writeStorage','sampleBlueprintIndex','migrateLegacySamples','normalizeState','clampInt','saveState','snapshot','restoreSnapshot','uid','isPlaced','getTask','area','occupancy','findFirstFit','canPlace','sanitizePlacements','getDetailTask','openTaskDetail','closeTaskDetail','renderTaskDetail','escapeHtml','isPresetSize','setCustomSizeVisible','openTaskDialog','closeTaskDialog','updateSizePresetState','submitTask','completeTask','restoreCompletedTask','hasSampleData','clearSampleData','backupData','importBackup','duplicateTask','undoMiniCompletion','validateBackup','applyBackupState','restoreBackupFromUrl','resetAll','reorderTask','moveTaskToEnd'];
   if (lists) functions.push('renderBoard','largestFreeRectangle','renderTaskList','renderTaskFilters','renderAll','renderBulkControls','setBulkMode','toggleBulkTask','setTaskViewMode','applyLanguage');
   const lines = html.split('\n');
   const source = functions.map(name => { const start = lines.findIndex(line => new RegExp(`^      (?:async )?function ${name}\\(`).test(line)); if (start < 0) return ''; let end = start + 1; if (name === 'renderTaskList' || name === 'renderBoard') while (end < lines.length && !/^      (?:async )?function /.test(lines[end])) end++; return lines.slice(start, end).join('\n'); }).join('\n');
@@ -390,17 +390,17 @@ for (const language of ['ja','en']) {
   });
 }
 
-for (const language of ['ja', 'en']) test(`${language}: mobile Board Add reuses the form, stays on Board, saves unplaced and supports Undo`, () => {
+for (const language of ['ja', 'en']) test(`${language}: mobile Board Add reuses the form, stays on Board, places directly and supports Undo`, () => {
   const app = boot(saved(), language, { mobile: true });
   app.el('tasksPage').classList.remove('is-mobile-active'); app.el('boardPage').classList.add('is-mobile-active');
   const before = app.state(), add = app.el('boardAddTaskButton');
   assert.ok(add, 'Board needs an Add action on mobile');
   add.dispatch('click'); assert.equal(app.el('taskDialog').open, true);
   assert.equal(app.el('taskTitleInput').value, '');
-  app.el('taskTitleInput').value = 'Board-created task'; app.el('taskNoteInput').value = 'Still unplaced'; app.el('taskImportantInput').checked = true;
+  app.el('taskTitleInput').value = 'Board-created task'; app.el('taskNoteInput').value = 'Placed immediately'; app.el('taskImportantInput').checked = true;
   app.submit();
   const added = app.state().tasks.at(-1);
-  assert.equal(added.title, 'Board-created task'); assert.equal(added.note, 'Still unplaced'); assert.equal(added.important, true); assert.equal(added.row, null); assert.equal(added.col, null);
+  assert.equal(added.title, 'Board-created task'); assert.equal(added.note, 'Placed immediately'); assert.equal(added.important, true); assert.equal(added.row, 0); assert.equal(added.col, 2);
   assert.deepEqual(app.state().tasks.slice(0,-1), before.tasks); assert.deepEqual(app.stored(), app.state());
   assert.equal(app.el('boardPage').classList.contains('is-mobile-active'), true); assert.equal(app.el('tasksPage').classList.contains('is-mobile-active'), false);
   app.undo(); assert.deepEqual(app.state(), before);
@@ -422,4 +422,66 @@ test('mobile Board Add keeps its draft and Board when at the task limit', () => 
   const before = app.state(), add = app.el('boardAddTaskButton'); assert.ok(add, 'Board needs an Add action on mobile');
   add.dispatch('click'); app.el('taskTitleInput').value = 'Keep draft'; app.submit();
   assert.deepEqual(app.state(), before); assert.equal(app.el('taskDialog').open, true); assert.equal(app.el('taskTitleInput').value, 'Keep draft'); assert.equal(app.el('taskFormError').hidden, false); assert.equal(app.el('boardPage').classList.contains('is-mobile-active'), true);
+});
+
+
+function boardAdd(app, title = 'Direct to Board') {
+  app.el('tasksPage').classList.remove('is-mobile-active'); app.el('boardPage').classList.add('is-mobile-active');
+  app.el('boardAddTaskButton').dispatch('click'); app.el('taskTitleInput').value = title;
+}
+const boardFixture = tasks => ({ ...saved(tasks), board: { rows: 3, cols: 3 } });
+const fullBoard = () => boardFixture(Array.from({length:3},(_,row)=>task({id:`row-${row}`,w:3,h:1,row,col:0})));
+
+for (const language of ['ja','en']) for (const condition of ['full','fragmented','oversized']) test(`${language}: Board Add ${condition} keeps the entire draft and state without an unplaced fallback`, () => {
+  const input = condition === 'full' ? fullBoard() : condition === 'fragmented' ? boardFixture([task({w:1,h:3,row:0,col:1})]) : boardFixture([]);
+  const app = boot(input, language, { mobile: true }); boardAdd(app, 'Keep this draft');
+  app.el('taskNoteInput').value = 'Keep note'; app.el('taskImportantInput').checked = true;
+  app.el('taskWidthInput').value = condition === 'oversized' ? 4 : 2; app.el('taskHeightInput').value = 2;
+  const before = app.state(); app.submit();
+  assert.deepEqual(app.state(), before); assert.deepEqual(app.stored(), before); assert.equal(app.el('taskDialog').open, true);
+  assert.equal(app.el('taskTitleInput').value, 'Keep this draft'); assert.equal(app.el('taskNoteInput').value, 'Keep note'); assert.equal(app.el('taskImportantInput').checked, true);
+  assert.equal(app.el('taskFormError').hidden, false); assert.match(app.el('taskFormError').textContent, language === 'ja' ? /サイズ.*キャンセル/ : /smaller.*cancel/);
+  assert.equal(app.el('boardPage').classList.contains('is-mobile-active'), true);
+});
+
+test('a failed Board draft can be resized and saved once in the first available region', () => {
+  const app=boot(boardFixture([task({w:1,h:3,row:0,col:1})]),'en',{mobile:true});boardAdd(app);
+  app.el('taskWidthInput').value=2;app.el('taskHeightInput').value=2;app.submit();assert.equal(app.el('taskDialog').open,true);
+  app.el('taskWidthInput').value=1;app.el('taskHeightInput').value=3;app.submit();
+  const added=app.state().tasks.at(-1);assert.equal(added.row,0);assert.equal(added.col,0);assert.equal(added.w,1);assert.equal(added.h,3);
+  assert.equal(app.el('taskDialog').open,false);const after=app.state();app.submit();assert.deepEqual(app.state(),after,'Repeated submit after modal close must not create an unplaced duplicate');
+  assert.deepEqual(boot(app.stored()).state(),after);app.undo();assert.equal(app.state().tasks.length,1);
+});
+
+for (const close of ['cancelTaskButton','closeTaskDialog','Escape']) test(`Board creation destination cannot leak after ${close} into list Add, Edit, or Duplicate`,()=>{
+  const app=boot(saved(),'en',{mobile:true});boardAdd(app);const before=app.state();
+  if(close==='Escape')app.el('taskDialog').dispatch('cancel');else app.el(close).dispatch('click');
+  assert.deepEqual(app.state(),before);app.el('addTaskButton').dispatch('click');app.el('taskTitleInput').value='List task';app.submit();
+  assert.equal(app.state().tasks.at(-1).row,null);assert.equal(app.state().tasks.at(-1).col,null);
+  app.run("openTaskDialog('original')");app.el('taskTitleInput').value='Edited';app.submit();assert.equal(app.state().tasks[0].row,0);assert.equal(app.state().tasks[0].col,0);assert.equal(app.state().tasks[0].createdAt,before.tasks[0].createdAt);
+  app.duplicate('original');app.submit();assert.equal(app.state().tasks.at(-1).row,null);assert.equal(app.state().tasks.at(-1).col,null);
+});
+
+test('ordinary list Add works on a full board and does not auto-place',()=>{
+  const app=boot(fullBoard(),'en',{mobile:true});app.el('addTaskButton').dispatch('click');app.el('taskTitleInput').value='Backlog';app.submit();
+  assert.equal(app.state().tasks.length,4);assert.equal(app.state().tasks.at(-1).row,null);
+});
+
+test('Board Add validates current occupancy at save, not the opening snapshot',()=>{
+  const app=boot(boardFixture([]),'en',{mobile:true});boardAdd(app);
+  app.run(`state=${JSON.stringify(fullBoard())};saveState()`);const before=app.state();app.submit();assert.deepEqual(app.state(),before);assert.equal(app.el('taskDialog').open,true);
+});
+
+test('blank Board title creates nothing and keeps the draft open',()=>{
+  const app=boot(saved(),'en',{mobile:true});boardAdd(app,'   ');const before=app.state();app.submit();assert.deepEqual(app.state(),before);assert.equal(app.el('taskDialog').open,true);
+});
+
+test('a queued close event cannot clear a newly reopened Board draft or Edit identity',()=>{
+  const app=boot(saved(), 'en', {mobile:true});
+  boardAdd(app); app.el('cancelTaskButton').dispatch('click'); boardAdd(app,'Reopened Board');
+  app.el('taskDialog').dispatch('close'); app.submit();
+  assert.equal(app.state().tasks.at(-1).row,0); assert.equal(app.state().tasks.at(-1).col,2);
+  app.run("openTaskDialog('original')"); app.el('taskTitleInput').value='Edited after close';
+  app.el('taskDialog').dispatch('close'); app.submit();
+  assert.equal(app.state().tasks.length,2); assert.equal(app.state().tasks[0].title,'Edited after close');
 });
