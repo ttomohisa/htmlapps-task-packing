@@ -11,7 +11,7 @@ A local-first visual ToDo app that gives every task a physical size and asks you
 
 Instead of letting an endless backlog make everything look equally possible, Task Packing separates the **task list** from the **capacity board**. Keep tasks in the list, decide how large they feel, and place only what actually fits.
 
-Use **EN / JA** in the header to switch language without clearing your search or saved data. The adjacent Help button and local-processing badge follow the selected language.
+Use **EN / JA** in the header to switch language without clearing your search or saved data. The adjacent Help button and local-processing badge follow the selected language. Help starts with three short Add / Place / Complete steps, followed by essential backup and data-loss notes.
 
 Close Help with its Close button, Escape, or a click on the backdrop.
 
