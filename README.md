@@ -11,7 +11,7 @@ A local-first visual ToDo app that gives every task a physical size and asks you
 
 Instead of letting an endless backlog make everything look equally possible, Task Packing separates the **task list** from the **capacity board**. Keep tasks in the list, decide how large they feel, and place only what actually fits.
 
-Use **EN / JA** in the header to switch language without clearing your search or saved data. The adjacent Help button and local-processing badge follow the selected language.
+Use **EN / JA** in the header to switch language without clearing your search or saved data. The adjacent Help button and local-processing badge follow the selected language. Help explains basic operations, privacy, backups, and data-loss precautions.
 
 Close Help with its Close button, Escape, or a click on the backdrop.
 
@@ -66,7 +66,9 @@ The core app does not require a local web server. The optional **Mini board** de
 
 ## Usage
 
-1. Add a task from the task list. Use the card/row toggle beside the filters when you want either richer context or a denser one-line overview.
+On mobile, the bottom tabs move to the selected panel just below the fixed header. The app footer is hidden to keep the workspace clear.
+
+1. Add a task from the task list, or from the Board heading on mobile. The same Add form opens; saving from Board keeps that tab selected and places the new task in the first suitable free area. If it does not fit, the draft stays open: reduce its size, or cancel and rearrange or enlarge the board. Adding from the task list still creates an unplaced task. Use the card/row toggle beside the filters when you want either richer context or a denser one-line overview.
 2. Choose its size. Use XS–XL for quick sizing, or choose **Other** to reveal custom width/height fields.
 3. Optionally mark the task as **Important** and add a note.
 4. On desktop, drag an unplaced task onto the board. The **Place** action can also auto-place a single task into the first suitable free area.

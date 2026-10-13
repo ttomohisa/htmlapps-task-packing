@@ -84,7 +84,11 @@ Normal ToDo lists can grow without limit. Task Packing keeps a normal task inven
 - Header language control shows the target EN / JA, with matching localized aria-label and title (`英語に切り替え` / `Switch to Japanese`). Switching language preserves current data and useful UI state. Privacy remains `完全ローカル処理` / `Fully local processing`, and Help is localized.
 
 - Desktop: task list and completion history at left, capacity board at right, settings below. Task list starts expanded; Completion history starts collapsed; both are independently collapsible.
-- Smartphone: four bottom tabs (Tasks / Board / History / Settings); only one page is shown at a time.
+- Smartphone: four bottom tabs (Tasks / Board / History / Settings); only one page is shown at a time. Selecting a tab scrolls its panel top to 8px below the measured sticky header, respecting reduced motion. Short panels retain enough height for that scroll target. The app footer is hidden on smartphones.
+- Smartphone Board has an Add button beside its title. It opens the shared Add form without changing tabs; Save, Cancel, Close, and Escape retain the Board. Saving creates and places a task atomically in the first suitable free region using the existing first-fit rules and current occupancy. If no region fits, retain the draft and show a localized instruction to reduce the size or cancel and rearrange/enlarge the board; create no task. Existing validation, persistence, and single-step Undo apply. List Add and Duplicate still create unplaced tasks. No schema-1 changes.
+- Header/intro title font sizes remain language-independent. Use 100% text-size-adjust (including the WebKit prefix) to normalize mobile automatic text inflation while preserving browser zoom; mark the unchanged English product name with lang="en".
+- Help retains the detailed basic-operation and notes prose, with mobile Board Add described as direct placement. Keep privacy, storage/data-loss, backup validation, board resize/drag, limits, mini-board, and offline notes. Do not reintroduce the removed language-switching or Help-dismissal instructions.
+- The Japanese intro headline is 「やることをキャパの中に収める」. Help omits language-switch and dismissal boilerplate while retaining actual usage, privacy, backup, and data-loss guidance.
 - Mobile multi-placement must work without HTML drag-and-drop and must validate capacity before committing.
 - Visible keyboard focus, accessible Details/Complete labels, and keyboard-selectable board tasks.
 - Native Help, task, detail, and confirmation dialogs lock both document scroll containers while modal. Their existing scrolling cards and sticky headers remain unchanged; closing restores normal page scrolling.
@@ -127,6 +131,8 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 - Dragging a placed task onto the task list unplaces it.
 - Dragging active tasks to history completes them; dragging history back restores them.
 - Shrinking the board does not delete tasks.
+- Mobile Board Add creates an independent directly placed task without overlaps, preserves existing tasks, and leaves Board selected after save/cancel/reopen. Empty title, the 500-task limit, full/fragmented boards, and oversized tasks retain the form and draft without saving. A corrected draft saves once; Undo removes the new task and its placement together; reload retains saved data. Cancel/Close/Escape clear the transient destination, and later List Add, Edit, and Duplicate keep their existing behavior.
+- Mobile tab switches and repeated taps target the selected content frame below the sticky header, including short History pages, without scrolling desktop layouts.
 - Mobile can select multiple unplaced tasks and place the whole selection atomically. Capacity failure and shape/layout failure are reported without partial placement.
 - Sample data can be cleared independently without touching user-created tasks or history; the clear button disappears afterward, Undo restores it, and Reset all recreates the samples.
 - JSON backup restores active tasks, history, importance, sizes, board dimensions, and valid positions. URL backup uses the same state shape and restore validation, gzip compression plus Base64URL encoding, and remains secondary and size-limited.
