@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Move build information to the end of Help while preserving existing smartphone visibility.
+- Standardize the English local-processing footer label to “Fully local processing”.
+
 ## 1.0.5 - 2026-10-11
 
 - Lock document scrolling behind native dialogs without changing their existing card/header layout, task behavior, or dismissal handlers.
