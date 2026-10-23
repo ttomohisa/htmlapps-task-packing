@@ -37,6 +37,7 @@ async function main() {
             }), label + ': badge text fits');
             assert.equal(await page.locator('main #buildVersion').count(), 0, label);
             assert.equal(await page.locator('footer').isVisible(), width > 600, label);
+            if (width > 600) assert.equal(await page.locator('footer [data-i18n="footer"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label + ': footer translation');
             assert.equal(await page.locator('.mobile-bottom-bar').isVisible(), width <= 600, label + ': functional navigation preserved');
 
             const pageWidth = await page.evaluate(() => ({
@@ -52,8 +53,8 @@ async function main() {
             if (pageWidth.scrollWidth > width) console.log('PAGE_OVERFLOW ' + label + ' ' + JSON.stringify(pageWidth));
             // Immutable base 20ff6892 has identical styles and task rendering.
             // Its English task-action row makes cards end at x=389.640625 on
-            // narrow phones. Do not broaden this Help change into task-card UI.
-            if (language === 'en' && width === 360) {
+            // the measured 320/360px phones. Do not change unrelated task-card UI.
+            if (language === 'en' && [320, 360].includes(width)) {
               const cardRight = await page.locator('#taskList .task-card').evaluateAll(cards => Math.max(...cards.map(card => card.getBoundingClientRect().right)));
               assert.ok(pageWidth.scrollWidth <= 390 && cardRight <= 390, label + ': no growth beyond known task-card overflow');
               assert.ok(pageWidth.scrollWidth <= Math.max(width, Math.ceil(cardRight)), label + ': overflow attributable to existing cards');

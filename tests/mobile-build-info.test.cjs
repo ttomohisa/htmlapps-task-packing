@@ -11,3 +11,8 @@ test('build metadata is unique and the final Help content',()=>{
  assert.match(tail,/^\s*(?:<!--[^]*?-->\s*)?<\/div>\s*<\/div>\s*$/);
  for(const id of ["buildVersion", "builtAt"])assert.equal((html.match(new RegExp(`id="${id}"`,'g'))||[]).length,1);
 });
+
+test('English footer uses the exact local-processing translation',()=>{
+ assert.match(html,/footer:'Fully local processing'/);
+ assert.doesNotMatch(html,/footer:'Fully local'/);
+});
