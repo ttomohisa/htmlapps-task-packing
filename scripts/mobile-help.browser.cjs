@@ -39,7 +39,18 @@ async function main() {
             assert.equal(await page.locator('footer').isVisible(), width > 600, label);
             assert.equal(await page.locator('.mobile-bottom-bar').isVisible(), width <= 600, label + ': functional navigation preserved');
 
-            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), label + ': page width');
+            const pageWidth = await page.evaluate(() => ({
+              viewport:innerWidth, scrollWidth:document.documentElement.scrollWidth,
+              offenders:[...document.querySelectorAll('body *')].filter(el => {
+                const r=el.getBoundingClientRect(); return r.width > 0 && (r.right > innerWidth+1 || r.left < -1);
+              }).slice(0,20).map(el => { const r=el.getBoundingClientRect(),s=getComputedStyle(el); return {
+                tag:el.tagName,id:el.id,className:el.className,left:r.left,right:r.right,width:r.width,
+                cssWidth:s.width,minWidth:s.minWidth,maxWidth:s.maxWidth,display:s.display,overflow:s.overflow,
+                gridTemplateColumns:s.gridTemplateColumns,whiteSpace:s.whiteSpace,text:el.textContent.trim().slice(0,80)
+              }; })
+            }));
+            if (pageWidth.scrollWidth > width) console.log('PAGE_OVERFLOW ' + label + ' ' + JSON.stringify(pageWidth));
+            assert.ok(pageWidth.scrollWidth <= width, label + ': page width');
 
             await page.locator('#helpButton').click();
             const body = page.locator('#helpDialog .dialog-body');
@@ -56,7 +67,7 @@ async function main() {
             assert.ok(finalBox && bodyBox && finalBox.y >= 0 && finalBox.y + finalBox.height <= height && finalBox.y >= bodyBox.y - 1 && finalBox.y + finalBox.height <= bodyBox.y + bodyBox.height + 1, label + ': final Help item reachable');
             assert.ok(await body.evaluate(el => el.scrollWidth <= el.clientWidth + 1), label + ': Help width');
             const headerBox = await page.locator('#helpDialog .dialog-head').boundingBox();
-            assert.ok(headerBox && headerBox.y >= 0 && headerBox.y + headerBox.height <= height, label + ': header visible');
+            assert.ok(headerBox && headerBox.x >= 0 && headerBox.x + headerBox.width <= width && headerBox.y >= 0 && headerBox.y + headerBox.height <= height, label + ': header visible');
             if (file === 'dist/index.html' && [1360, 320].includes(width)) {
               await page.screenshot({ path: path.join(results, `help-${language}-${width}.png`) });
             }
