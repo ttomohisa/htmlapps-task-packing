@@ -225,3 +225,5 @@ Licensed under the [MIT License](LICENSE).
 ### Regression tests
 
 Run `node --test` with Node.js 20 or newer. `scripts/check-repository.ps1` runs the dependency-free task behavior tests before building and verifying both HTML variants, then checks brand representations and modal contracts across source and readable releases. The test DOM adapter does not model native dialog, layout, or focus behavior; browser verification is still required.
+
+Save errors keep current work on screen. Retry storage recovery or save a JSON backup; unread saved data is retained until an explicit replacement. JSON backups include tasks, history and board layout. Board PNG has its own editable filename; Download started means the browser accepted delivery initiation.

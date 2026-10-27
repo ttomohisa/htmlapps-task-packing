@@ -168,3 +168,13 @@ try {
 
 & node --test (Join-Path $Root "tests/help-copy.test.cjs")
 if ($LASTEXITCODE -ne 0) { throw "Help copy regression failed." }
+
+# Actual whole-app adapters execute across all release variants after building.
+$previousSharedHtml=$env:TASK_PACKING_HTML
+try { foreach($relative in @('src/index.template.html','dist/index.html','task-packing.html','dist/index.self-extract.html')) {
+  $env:TASK_PACKING_HTML=Join-Path $Root $relative
+  & node --test (Join-Path $Root 'tests/shared-ui.test.cjs')
+  if($LASTEXITCODE -ne 0){throw "Common UI behavior failed: $relative"}
+}} finally {$env:TASK_PACKING_HTML=$previousSharedHtml}
+& node (Join-Path $Root 'scripts/test-common-ui.cjs')
+if($LASTEXITCODE -ne 0){throw 'Common UI release checks failed'}

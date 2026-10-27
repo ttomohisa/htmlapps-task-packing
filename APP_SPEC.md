@@ -147,3 +147,11 @@ Current stable desktop and mobile Chromium, Firefox, and Safari. Direct `file://
 ## Build information placement
 
 Keep existing build metadata at the very end of How to use & Notes, not the main page. Preserve the existing smartphone footer breakpoint and any existing mobile build hiding.
+
+## Common UI retention and recovery
+
+Tasks, history and the board remain in the existing schema-1 browser state; list view remains a separate preference. Actual successful writes alone advance saved time. Read rejection or malformed saved board blocks writes until a read-only recovery or explicit cancel-first replacement; current work can still be downloaded as JSON. Recovery preserves explicit list-view choices, including returning to the default. JSON restore validates before a captured cancel-first replacement. Later mutations invalidate old confirmations and snapshot Undo. Language uses URL, shared preference, legacy preference, then browser language without startup writes. Only an explicit language switch stores the shared preference.
+
+JSON backup and board PNG have editable names and report Download started. JSON/URL include tasks, history and board geometry, excluding list view/language. PNG includes only the visible board image. Independent output errors remain until matching success. Clipboard, PNG encoding and Mini board requests use native busy states and stale completion guards. Mini board receives the same embedded common UI CSS in its separate document.
+
+Dense board exception: compact per-tile completion controls retain 24px main-board and 20px Mini-board geometry so 1x1 tasks remain readable. Full-size 44px Complete is available in task details/list; Mini Undo and ordinary action controls are 44px. This is a dense spatial canvas exception, not a change to task geometry.

@@ -72,3 +72,7 @@
 - Optional always-on-top Mini board using Document Picture-in-Picture, including completion and latest-completion Undo.
 - Local persistence and schema version 1 JSON backup/restore.
 - Responsive mobile navigation, Japanese/English UI, single-HTML distribution, and runtime network blocking.
+
+- Add shared action states, truthful board/list-view retention and safe unread-data recovery.
+- Name JSON/PNG outputs, report download initiation, preserve output-specific failures, and capture restore/delete/Undo ownership.
+- Share language preference and canonical child PiP styles while retaining schema-1 data and packing algorithms.

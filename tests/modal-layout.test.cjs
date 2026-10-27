@@ -55,7 +55,7 @@ function confirmation() {
   }
   const document = { activeElement: new Element() };
   const $ = selector => { if (!nodes.has(selector)) nodes.set(selector, new Element()); return nodes.get(selector); };
-  const context = vm.createContext({ $, document, HTMLElement: Element, requestAnimationFrame: fn => fn(), t: key => key });
+  const context = vm.createContext({ $, document, language:'en',uiTranslate:value=>value,HTMLElement: Element, requestAnimationFrame: fn => fn(), t: key => key });
   const production = html.split('\n').find(line => line.startsWith('      const AppConfirm='));
   assert.ok(production, 'Production confirmation component is present');
   vm.runInContext(production + '\nglobalThis.ask = AppConfirm.ask;', context);
