@@ -93,3 +93,5 @@ test('Help restores the detailed pre-shortening structure with current Board-add
     assert.match(copy.helpNoteStorage,/JSON/);assert.match(copy.helpTaskLimit,/500/);
   }
 });
+
+test('44px task actions can wrap inside shrinkable cards and compact phone rows reserve a separate action line',()=>{const css=html.match(/<style>([\s\S]*?)<\/style>/)[1];const card=css.match(/\.task-card\s*\{([^}]*)\}/)[1],actions=css.match(/\.task-actions\s*\{([^}]*)\}/)[1];assert.match(card,/min-width:\s*0/);assert.match(actions,/flex-wrap:\s*wrap/);assert.match(mobileCss,/\.task-list\.is-row-view \.task-card\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)\s*;/);assert.doesNotMatch(card,/overflow:\s*(hidden|clip)/);assert.doesNotMatch(actions,/overflow:\s*(hidden|clip)/);});

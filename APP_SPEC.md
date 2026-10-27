@@ -155,3 +155,5 @@ Tasks, history and the board remain in the existing schema-1 browser state; list
 JSON backup and board PNG have editable names and report Download started. JSON/URL include tasks, history and board geometry, excluding list view/language. PNG includes only the visible board image. Independent output errors remain until matching success. Clipboard, PNG encoding and Mini board requests use native busy states and stale completion guards. Mini board receives the same embedded common UI CSS in its separate document.
 
 Dense board exception: compact per-tile completion controls retain 24px main-board and 20px Mini-board geometry so 1x1 tasks remain readable. Full-size 44px Complete is available in task details/list; Mini Undo and ordinary action controls are 44px. This is a dense spatial canvas exception, not a change to task geometry.
+
+At smartphone widths and narrow desktop side panels, the compact task list places its 44px action controls on a separate wrapping line; desktop retains the compact row when space permits. Rich cards shrink to the list width and wrap actions without clipping or reducing targets.

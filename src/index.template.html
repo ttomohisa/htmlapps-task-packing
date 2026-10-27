@@ -89,7 +89,7 @@
     .task-view-button.is-active { background:var(--surface); color:var(--accent); box-shadow:var(--shadow-sm); }
     .task-view-button svg { width:15px; height:15px; }
     .task-list { display:grid; gap:8px; align-content:start; grid-auto-rows:max-content; max-height:calc(100vh - 284px); min-height:280px; overflow:auto; padding:12px 12px 16px; }
-    .task-card { position:relative; display:flex; flex-direction:column; min-height:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fdfdfb; cursor:default; transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease; }
+    .task-card { position:relative; min-width:0; display:flex; flex-direction:column; min-height:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fdfdfb; cursor:default; transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease; }
     .task-card:hover { border-color:var(--line-strong); box-shadow:var(--shadow-sm); }
     .task-card.is-selected { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
     .task-card.is-important { border-left:4px solid #c77900; padding-left:9px; }
@@ -117,7 +117,7 @@
     .badge.important { background:#fff0cf; color:#865400; }
     .task-note { min-height:15px; margin:7px 0 0; color:var(--muted); font-size:11px; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
     .task-note.is-empty { visibility:hidden; }
-    .task-actions { display:flex; flex-wrap:nowrap; gap:5px; margin-top:9px; }
+    .task-actions { display:flex; min-width:0; flex-wrap:wrap; gap:5px; margin-top:9px; }
     .task-link { display:inline-flex; align-items:center; gap:4px; border:0; border-radius:7px; padding:4px 7px; background:transparent; color:var(--muted); cursor:pointer; font-size:10px; font-weight:760; }
     .task-link svg { width:13px; height:13px; flex:0 0 auto; }
     .task-link:hover { background:var(--surface-muted); color:var(--text); }
@@ -281,6 +281,7 @@
     .mobile-bottom-bar { display:none; }
     .app-mobile-page { display:block; }
     @media (max-width:900px) {
+      .task-list.is-row-view .task-card { grid-template-columns:minmax(0,1fr); }
       .desktop-layout { grid-template-columns:minmax(250px,310px) minmax(0,1fr); gap:12px; }
       .settings-grid { grid-template-columns:1fr 1fr; }
       .settings-grid .setting-group:last-child { grid-column:1/-1; }
@@ -316,7 +317,7 @@
       .task-filter-toolbar { gap:6px; }
       .task-view-button { height:29px; padding-inline:7px; }
       .task-list.is-row-view { padding-left:8px; padding-right:8px; }
-      .task-list.is-row-view .task-card { grid-template-columns:minmax(0,1fr) auto; padding:6px; }
+      .task-list.is-row-view .task-card { grid-template-columns:minmax(0,1fr); padding:6px; }
       .task-list.is-row-view .task-title { font-size:12px; }
       .task-list.is-row-view .task-meta .size-badge { padding-inline:4px; }
       .task-list.is-row-view .task-link { width:24px; height:26px; }
