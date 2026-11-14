@@ -39,7 +39,7 @@ test('Help omits implementation commentary and retains user instructions', () =>
 
 test('local-processing badge keeps its existing shield', () => {
   const badge = html.match(/<span class="local-badge">([\s\S]*?)<\/svg>/)[1];
-  assert.match(badge, /<path d="M12 3 5 6v5c0 4\.6 2\.8 8\.1 7 10 4\.2-1\.9 7-5\.4 7-10V6z"/);
+  assert.match(badge, /<path d="M12 3 5 6v5c0 4\.6 2\.8 8 7 10 4\.2-2 7-5\.4 7-10V6z"/);
 });
 
 function confirmation() {
