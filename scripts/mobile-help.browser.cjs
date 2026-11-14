@@ -37,7 +37,7 @@ async function main() {
             }), label + ': badge text fits');
             assert.equal(await page.locator('main #buildVersion').count(), 0, label);
             assert.equal(await page.locator('footer').isVisible(), width > 600, label);
-            if (width > 600) assert.equal(await page.locator('footer [data-i18n="footer"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label + ': footer translation');
+            if (width > 600) assert.equal(await page.locator('footer [data-i18n="footer"]').textContent(), language === 'en' ? 'Packing lists stay in the browser' : 'パッキングリストはブラウザー内で完結', label + ': footer translation');
             assert.equal(await page.locator('.mobile-bottom-bar').isVisible(), width <= 600, label + ': functional navigation preserved');
 
             const pageWidth = await page.evaluate(() => ({

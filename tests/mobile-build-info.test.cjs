@@ -12,7 +12,7 @@ test('build metadata is unique and the final Help content',()=>{
  for(const id of ["buildVersion", "builtAt"])assert.equal((html.match(new RegExp(`id="${id}"`,'g'))||[]).length,1);
 });
 
-test('English footer uses the exact local-processing translation',()=>{
- assert.match(html,/footer:'Fully local processing'/);
- assert.doesNotMatch(html,/footer:'Fully local'/);
+test('English footer uses the shared footer phrase',()=>{
+ assert.match(html,/footer:'Packing lists stay in the browser'/);
+ assert.doesNotMatch(html,/footer:'Fully local processing'/);
 });

@@ -27,8 +27,8 @@ test('brand asset, embedded favicon and header keep canonical color and exact 25
     const header = html.match(/<header\b[\s\S]*?<\/header>/)[0];
     const rules = [...html.matchAll(/\.brand-mark\s*\{([^}]+)\}/g)].map(m => m[1]);
     assert.ok(rules.length);
-    for (const rule of rules.filter(r => /border-radius/.test(r))) assert.match(rule, /border-radius:\s*25%/);
-    assert.match(rules[0], /background:\s*var\(--accent\)/);
+    for (const rule of rules.filter(r => /border-radius/.test(r))) assert.match(rule, /border-radius:\s*10px/);
+    assert.match(rules[0], /background:\s*transparent/);
     assert.match(html, /--accent:\s*#16624f;/i);
   }
 });
